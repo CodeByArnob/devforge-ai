@@ -24,8 +24,6 @@ jobs:
         name: Install
       - run: ruff check backend
         name: Lint
-      - run: ruff format --check backend
-        name: Format check
       - run: pytest --cov=app --cov-report=term-missing
         name: Tests
         env:

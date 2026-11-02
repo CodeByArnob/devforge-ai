@@ -1,6 +1,5 @@
 import asyncio
 import json
-from collections.abc import Callable
 
 import httpx
 from pydantic import ValidationError

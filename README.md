@@ -1,14 +1,43 @@
-# DevForge AI
+<p align="center">
+  <img src="docs/assets/banner.png" alt="DevForge AI Banner" width="100%" />
+</p>
 
-[![Backend & Runner CI](https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml)
-[![Flutter Client CI](https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml/badge.svg)](https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml)
-[![Security Policy](https://img.shields.io/badge/Security-Hardened_Sandboxes-blue.svg)](SECURITY.md)
+<p align="center">
+  <a href="https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml"><img src="https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml/badge.svg" alt="Backend & Runner CI" /></a>
+  <a href="https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml"><img src="https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml/badge.svg" alt="Flutter Client CI" /></a>
+  <a href="https://github.com/CodeByArnob/devforge-ai/releases"><img src="https://img.shields.io/github/v/release/CodeByArnob/devforge-ai?color=brightgreen&label=Release" alt="Latest Release" /></a>
+  <a href="SECURITY.md"><img src="https://img.shields.io/badge/Security-Hardened_Sandboxes-blue.svg" alt="Security Policy" /></a>
+  <a href="https://github.com/CodeByArnob/devforge-ai/releases/latest"><img src="https://img.shields.io/badge/Android%20APK-Download-orange?logo=android" alt="Download Android APK" /></a>
+</p>
 
-**DevForge AI** is a production-ready, autonomous multi-language software development platform featuring hardened sandbox execution, an 8-role specialist agent team, copy-on-write workspace snapshots with human-gated patch verification, and a modern Flutter client for Android, Web, and Windows.
+<h3 align="center">Autonomous, Multi-Language Software Development Platform</h3>
+
+<p align="center">
+  DevForge AI unifies disposable Podman container sandboxes, an 8-role autonomous specialist agent team, copy-on-write workspace snapshots with human-in-the-loop diff approvals, and a cross-platform Flutter client for Android, Web, and Windows.
+</p>
 
 ---
 
-## Architecture Overview
+## 📸 Application Showcase
+
+<p align="center">
+  <b>Autonomous Agent Workspace & Live Timeline</b><br/>
+  <img src="docs/screenshots/01_agent_timeline_chat.png" alt="DevForge Agent Workspace" width="95%" />
+</p>
+
+<p align="center">
+  <b>Human-in-the-Loop Unified Diff Viewer & Precondition Validation</b><br/>
+  <img src="docs/screenshots/02_diff_viewer_approval.png" alt="Unified Diff Viewer" width="95%" />
+</p>
+
+<p align="center">
+  <b>Local Open-Source Model Catalogue & Capacity Sizing</b><br/>
+  <img src="docs/screenshots/03_local_models_catalogue.png" alt="Local GGUF Models" width="95%" />
+</p>
+
+---
+
+## 🏛️ System Architecture
 
 ```
                       ┌──────────────────────────────────────┐
@@ -39,18 +68,18 @@
 
 ---
 
-## Key Capabilities
+## ⚡ Core Capabilities
 
 ### 1. Autonomous Multi-Agent Specialist Team (8 Roles)
-- **Architect**: System design, directory hierarchy, and module boundaries.
-- **Planner**: Step-by-step phased execution roadmap with clear checkpoints.
+- **Architect**: High-level system design, module boundaries, and folder hierarchy.
+- **Planner**: Bounded phased execution roadmaps with milestones.
 - **Coder**: Structured patch proposals with file checksum preconditions.
-- **Security Reviewer**: SAST, secret leak auditing, and OWASP boundary checks.
+- **Security Reviewer**: Automated vulnerability auditing, OWASP boundary checks, and secret leakage prevention.
 - **QA Engineer**: Test plan design, edge case generation, and regression suites.
 - **Build Engineer**: Toolchain configuration, dependency pinning, and packaging.
 - **Repair Engineer**: Fast root-cause analysis and automated patch synthesis.
 - **Integration Engineer**: End-to-end integration, API contract verification, and docs.
-- *Strictly enforces free OpenRouter models (`:free` / `openrouter/free`) with zero ambient keys.*
+- *Strictly routes to free OpenRouter models (`:free` / `openrouter/free`) with zero ambient keys.*
 
 ### 2. Disposable Sandbox Execution Runtime (`runner/`)
 - Rootless Podman container sandbox with unprivileged user (`65532:65532`).
@@ -90,7 +119,7 @@
 
 ---
 
-## Quickstart
+## 🚀 Quickstart
 
 ### Prerequisites
 - Python 3.12+
@@ -135,7 +164,7 @@ flutter run -d android
 
 ---
 
-## Verification & Tests
+## 🧪 Verification & Tests
 
 ### Backend & Runner Verification
 ```bash
@@ -156,7 +185,7 @@ flutter build apk --debug
 
 ---
 
-## License & Security
+## 🛡️ License & Security
 - Licensed under the Apache 2.0 License.
 - See [SECURITY.md](SECURITY.md) for vulnerability disclosure and sandbox containment policies.
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.

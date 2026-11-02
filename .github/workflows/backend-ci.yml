@@ -18,6 +18,9 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install -e ".[dev]"
+      - run: alembic upgrade head
+        env:
+          DATABASE_URL: sqlite:////tmp/devforge-migration-test.db
       - run: ruff check backend
       - run: pytest --cov=app --cov-report=term-missing
         env:

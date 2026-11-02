@@ -21,14 +21,15 @@
 - [ ] Verified ownership reassignment workflow for legacy unowned projects
 
 ## Phase 3 — Autonomous execution
-- [ ] Disposable isolated workers with CPU/memory/disk/network limits
-- [ ] Tool registry and language-specific lint/test/build adapters
-- [ ] Patch generation, diff approval and bounded repair loops
-- [ ] Artifact storage, provenance and audit history
+- [x] Disposable isolated workers with CPU/memory/disk/network limits
+- [x] Hardened rootless Podman execution runtime with dropped caps, seccomp, no-new-privileges, and default-deny network
+- [x] Strict allowlisted tool registry with per-role access control
+- [x] Language-specific dependency, lint, test, and build adapters (Flutter/Dart, Java, Python, JS/TS)
+- [x] 8 independent specialist agents (Architect, Planner, Coder, Security Reviewer, QA, Build, Repair, Integration)
+- [x] Bounded structured patch generation, unified diffs, human approval gate, and snapshot rollback
+- [x] Resilient worker lifecycle with atomic claims, heartbeats, early cancellation, bounded retries, and audit history
 
 ## Phase 4 — Client and local models
 - [ ] Flutter chat workspace, secure key vault and live activity timeline
 - [ ] Project explorer, diff viewer, approvals and artifact viewer
 - [ ] Local GGUF catalogue with license, checksum, ABI and RAM validation
-
-**Production status:** Identity and tenant authorization are now implemented in the backend branch, but the complete product is not production-ready. It still lacks isolated workers, code editing/execution, verification/build pipelines, the Flutter client, operational monitoring, persistent abuse controls and a deployment hardening review.

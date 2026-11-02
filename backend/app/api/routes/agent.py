@@ -9,7 +9,9 @@ from app.db.session import get_db
 from app.schemas.ai import AgentRunRequest, AgentTeamPlan
 from app.schemas.task import TaskRead
 from app.services.agent_runtime import AgentRuntime
+from app.services.multi_agent_orchestrator import DEFAULT_PLANNING_ROLES
 from app.services.openrouter_gateway import OpenRouterError
+from app.services.tool_registry import ToolRegistry
 
 router = APIRouter(prefix="/tasks", tags=["agent"])
 
@@ -35,7 +37,11 @@ async def run_agent(
 ) -> AgentTeamRunResponse:
     try:
         task, team_plan = await AgentRuntime(db).create_plan(
-            task_id, x_openrouter_api_key, payload.model, owner_id=user.id
+            task_id,
+            x_openrouter_api_key,
+            payload.model,
+            owner_id=user.id,
+            roles=payload.roles or DEFAULT_PLANNING_ROLES,
         )
         return AgentTeamRunResponse(task=task, team_plan=team_plan)
     except LookupError as exc:
@@ -44,3 +50,19 @@ async def run_agent(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except OpenRouterError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get("/tools/registry", summary="List allowlisted tool registry and permissions")
+def get_tool_registry():
+    tools = ToolRegistry.list_all_tools()
+    return [
+        {
+            "name": t.name,
+            "description": t.description,
+            "parameters": t.parameters,
+            "allowed_roles": sorted(list(t.allowed_roles)),
+            "execution_plane": t.execution_plane,
+            "requires_human_approval": t.requires_human_approval,
+        }
+        for t in tools
+    ]

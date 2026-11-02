@@ -24,6 +24,7 @@ class WorkerHeartbeatRead(BaseModel):
     job_id: UUID
     lease_expires_at: datetime
     status: str
+    cancellation_requested: bool = False
 
 
 class WorkerFailureRequest(BaseModel):
@@ -50,3 +51,14 @@ class WorkerCompletionRead(BaseModel):
     job_id: UUID
     status: str
 
+
+class WorkerJobDetailsRead(BaseModel):
+    job_id: UUID
+    task_id: UUID
+    project_id: str
+    instruction: str
+    workspace_path: str
+    languages: list[dict]
+    attempt: int
+    status: str
+    cancellation_requested: bool = False

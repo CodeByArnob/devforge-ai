@@ -132,3 +132,57 @@ def test_unapproved_task_cannot_enter_worker_queue():
         )
         with pytest.raises(ValueError, match="Only owner-approved"):
             WorkerQueue(db).enqueue_approved_task(task)
+
+
+def test_terminal_failure_updates_task_status_to_failed():
+    with make_session() as db:
+        task = setup_approved_task(db)
+        queue = WorkerQueue(db)
+        for i in range(1, 4):
+            claim = queue.claim(f"worker-{i}")
+            assert claim is not None
+            queue.fail(claim["job_id"], claim["lease_token"], f"fail {i}")
+        db.refresh(task)
+        assert task.status == TaskStatus.failed
+
+
+def test_cancellation_and_job_details():
+    with make_session() as db:
+        task = setup_approved_task(db)
+        queue = WorkerQueue(db)
+        claim = queue.claim("worker-canceller")
+        assert claim is not None
+
+        details = queue.get_details(claim["job_id"])
+        assert details is not None
+        assert details["task_id"] == task.id
+        assert details["cancellation_requested"] is False
+
+        # Request cancellation
+        queue.request_cancellation(task.id)
+        hb = queue.heartbeat(claim["job_id"], claim["lease_token"])
+        assert hb is not None
+        assert hb.cancellation_requested_at is not None
+
+        # Acknowledge cancellation
+        cancelled_job = queue.cancelled(claim["job_id"], claim["lease_token"])
+        assert cancelled_job is not None
+        assert cancelled_job.status == WorkerJobStatus.cancelled
+        db.refresh(task)
+        assert task.status == TaskStatus.cancelled
+
+
+def test_completion_updates_task_status_and_records_result():
+    with make_session() as db:
+        task = setup_approved_task(db)
+        queue = WorkerQueue(db)
+        claim = queue.claim("worker-completer")
+        assert claim is not None
+
+        result_payload = {"exit_code": 0, "stdout": "All tests passed", "succeeded": True}
+        completed = queue.complete(claim["job_id"], claim["lease_token"], result_payload)
+        assert completed is not None
+        assert completed.status == WorkerJobStatus.succeeded
+        assert completed.result == result_payload
+        db.refresh(task)
+        assert task.status == TaskStatus.completed

@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.schemas.worker import (
-    WorkerClaimRequest, WorkerFailureRequest, WorkerHeartbeatRead,
-    WorkerHeartbeatRequest, WorkerLeaseRead, WorkerReleaseRead, WorkerCompletionRequest,
-    WorkerCompletionRead, WorkerCancellationRequest,
+    WorkerCancellationRequest, WorkerClaimRequest, WorkerCompletionRead,
+    WorkerCompletionRequest, WorkerFailureRequest, WorkerHeartbeatRead,
+    WorkerHeartbeatRequest, WorkerJobDetailsRead, WorkerLeaseRead, WorkerReleaseRead,
 )
 from app.services.worker_queue import WorkerQueue
 
@@ -30,8 +30,15 @@ def require_worker(
 
 @router.post("/claim", response_model=WorkerLeaseRead | None, dependencies=[Depends(require_worker)])
 def claim_job(payload: WorkerClaimRequest, db: Session = Depends(get_db)):
-    # A lease reserves a job; it is not authorization to execute arbitrary code.
     return WorkerQueue(db).claim(payload.worker_id)
+
+
+@router.get("/{job_id}/details", response_model=WorkerJobDetailsRead, dependencies=[Depends(require_worker)])
+def get_job_details(job_id: UUID, db: Session = Depends(get_db)):
+    details = WorkerQueue(db).get_details(job_id)
+    if details is None:
+        raise HTTPException(status_code=404, detail="Job not found.")
+    return details
 
 
 @router.post("/{job_id}/heartbeat", response_model=WorkerHeartbeatRead, dependencies=[Depends(require_worker)])
@@ -42,7 +49,10 @@ def heartbeat_job(
     if job is None:
         raise HTTPException(status_code=409, detail="Lease is invalid or expired.")
     return WorkerHeartbeatRead(
-        job_id=job.id, lease_expires_at=job.lease_expires_at, status=job.status.value
+        job_id=job.id,
+        lease_expires_at=job.lease_expires_at,
+        status=job.status.value,
+        cancellation_requested=job.cancellation_requested_at is not None,
     )
 
 
@@ -54,7 +64,8 @@ def fail_job(
     if job is None:
         raise HTTPException(status_code=409, detail="Lease is invalid or expired.")
     return WorkerReleaseRead(
-        job_id=job.id, status=job.status.value,
+        job_id=job.id,
+        status=job.status.value,
         retry_scheduled=job.status.value == "queued",
     )
 
@@ -75,4 +86,3 @@ def acknowledge_cancellation(
     if job is None:
         raise HTTPException(status_code=409, detail="Lease is invalid or expired.")
     return WorkerCompletionRead(job_id=job.id, status=job.status.value)
-

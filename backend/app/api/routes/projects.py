@@ -2,7 +2,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -11,8 +11,9 @@ from app.core.auth import CurrentUser
 from app.core.config import get_settings
 from app.db.models import Project
 from app.db.session import get_db
-from app.services.project_ingestion import ProjectArchiveError, ingest_zip
 from app.services.github_import import GitHubImportError, import_public_repository
+from app.services.project_ingestion import ProjectArchiveError, ingest_zip
+from app.services.workspace_snapshot import WorkspaceSafetyError, inspect_workspace, read_file_safe
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -130,3 +131,46 @@ def get_project(project_id: str, user: CurrentUser, db: Session = Depends(get_db
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found.")
     return project
+
+
+@router.get("/{project_id}/inventory")
+def get_project_inventory(
+    project_id: str,
+    user: CurrentUser,
+    max_depth: int = Query(default=10, ge=1, le=20),
+    limit: int = Query(default=500, ge=1, le=2000),
+    db: Session = Depends(get_db),
+) -> dict:
+    project = db.scalar(
+        select(Project).where(Project.id == project_id, Project.owner_id == user.id)
+    )
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    try:
+        items = inspect_workspace(Path(project.workspace_path), max_depth=max_depth, limit=limit)
+        return {
+            "project_id": project_id,
+            "total_items": len(items),
+            "items": items,
+        }
+    except WorkspaceSafetyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/{project_id}/files/inspect")
+def inspect_project_file(
+    project_id: str,
+    path: str,
+    user: CurrentUser,
+    max_bytes: int = Query(default=64 * 1024, ge=1, le=1024 * 1024),
+    db: Session = Depends(get_db),
+) -> dict:
+    project = db.scalar(
+        select(Project).where(Project.id == project_id, Project.owner_id == user.id)
+    )
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    try:
+        return read_file_safe(Path(project.workspace_path), path, max_bytes=max_bytes)
+    except WorkspaceSafetyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

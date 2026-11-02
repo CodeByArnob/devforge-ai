@@ -1,4 +1,5 @@
 import shutil
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -28,7 +29,7 @@ class ProjectRead(BaseModel):
     source_type: str
     file_count: int
     languages: list[dict]
-    created_at: object
+    created_at: datetime
 
 
 @router.post("/import/zip", response_model=ProjectImportResponse, status_code=201)

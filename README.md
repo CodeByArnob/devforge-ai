@@ -1,16 +1,14 @@
 # DevForge AI
 
-**Autonomous, multi-language software development platform.**
+**Autonomous, multi-language software development platform — backend milestone.**
 
-DevForge AI separates its conversational client, model gateway, agent orchestration and isolated execution workers.
-
-> **Current status:** Backend foundation plus OpenRouter free-model discovery, streaming chat proxy and a planning-only agent runtime. The agent can generate and persist a proposed plan with an approval checkpoint. It cannot yet inspect or modify a repository, execute shell commands, run tests or build artifacts; secure project ingestion and isolated workers are still required.
-
-## Backend stack
-- Python 3.12, FastAPI, Pydantic and SQLAlchemy
-- PostgreSQL (Docker Compose) / SQLite for local tests
-- OpenRouter live catalogue and Server-Sent Events streaming
-- Durable task/event records and a plan-first agent workflow
+## Implemented
+- FastAPI API with task and durable activity-event persistence.
+- OpenRouter live model catalogue, explicit free-model filtering and SSE chat proxy.
+- Planning-only agent that stores a proposed plan and pauses at an approval checkpoint.
+- ZIP project import with traversal, symlink, encrypted-entry, entry-count, per-file and total expansion limits.
+- Optional shared API-token protection for all application routes except liveness. Production mode fails closed when no token is configured.
+- Language manifest detection for Flutter/Dart, JS/TS, Python, Kotlin/Java, Go, Rust, PHP, Ruby, .NET, C/C++ and Swift.
 
 ## Run locally
 ```bash
@@ -21,24 +19,25 @@ pip install -e ".[dev]"
 uvicorn app.main:app --app-dir backend --reload
 ```
 
-## OpenRouter endpoints
-- `GET /api/v1/ai/models?free_only=true` — fetches the live catalogue and returns only model IDs ending in `:free` plus `openrouter/free`.
-- `POST /api/v1/ai/chat/stream` — streams SSE from OpenRouter. Supply `X-OpenRouter-Api-Key`; keys are not written to the database or logs.
-- `POST /api/v1/tasks` — create a task.
-- `POST /api/v1/tasks/{task_id}/agent/run` — generate a plan using a free model. The response moves to `awaiting_approval`; no code is executed.
+## Configure
+Copy .env.example to .env. Set a long random API_ACCESS_TOKEN before exposing the API. Send it as X-DevForge-Token for protected endpoints. Set WORKSPACE_ROOT to a private persistent directory. Do not commit .env.
 
-Example chat request:
-```json
-{
-  "model": "openrouter/free",
-  "messages": [{"role": "user", "content": "Explain this repository"}]
-}
-```
+## API
+- GET /health — liveness probe.
+- GET /api/v1/ai/models?free_only=true — live free-model catalogue.
+- POST /api/v1/ai/chat/stream — SSE chat; requires X-OpenRouter-Api-Key.
+- POST /api/v1/projects/import/zip — guarded ZIP project import; multipart field file.
+- POST /api/v1/tasks — create task.
+- POST /api/v1/tasks/{task_id}/agent/run — generate a plan, not execute code.
+- GET /api/v1/tasks/{task_id}/events — task activity SSE.
 
-## Quality checks
+All /api/v1 routes require X-DevForge-Token when configured. Production mode refuses requests if the token is not configured. The current shared-token mode is a deployment bootstrap, not multi-user identity or per-project authorization.
+
+## Important execution boundary
+The agent does NOT execute commands, modify repositories, run tests or produce builds. Never expose the API to the public internet as a complete autonomous coding service until user identities, project ownership, quotas, migrations, isolated disposable workers, monitoring and a client application are implemented and tested.
+
+## Checks
 ```bash
 ruff check backend
-pytest
+pytest --cov=app
 ```
-
-See [Architecture](docs/architecture.md), [Security Model](docs/security-model.md), and [Roadmap](docs/roadmap.md).

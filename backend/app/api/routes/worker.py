@@ -9,7 +9,8 @@ from app.core.config import get_settings
 from app.db.session import get_db
 from app.schemas.worker import (
     WorkerClaimRequest, WorkerFailureRequest, WorkerHeartbeatRead,
-    WorkerHeartbeatRequest, WorkerLeaseRead, WorkerReleaseRead,
+    WorkerHeartbeatRequest, WorkerLeaseRead, WorkerReleaseRead, WorkerCompletionRequest,
+    WorkerCompletionRead, WorkerCancellationRequest,
 )
 from app.services.worker_queue import WorkerQueue
 
@@ -56,3 +57,22 @@ def fail_job(
         job_id=job.id, status=job.status.value,
         retry_scheduled=job.status.value == "queued",
     )
+
+
+@router.post("/{job_id}/complete", response_model=WorkerCompletionRead, dependencies=[Depends(require_worker)])
+def complete_job(job_id: UUID, payload: WorkerCompletionRequest, db: Session = Depends(get_db)):
+    job = WorkerQueue(db).complete(job_id, payload.lease_token, payload.result)
+    if job is None:
+        raise HTTPException(status_code=409, detail="Lease is invalid, expired, or cancelled.")
+    return WorkerCompletionRead(job_id=job.id, status=job.status.value)
+
+
+@router.post("/{job_id}/cancelled", response_model=WorkerCompletionRead, dependencies=[Depends(require_worker)])
+def acknowledge_cancellation(
+    job_id: UUID, payload: WorkerCancellationRequest, db: Session = Depends(get_db)
+):
+    job = WorkerQueue(db).cancelled(job_id, payload.lease_token)
+    if job is None:
+        raise HTTPException(status_code=409, detail="Lease is invalid or expired.")
+    return WorkerCompletionRead(job_id=job.id, status=job.status.value)
+

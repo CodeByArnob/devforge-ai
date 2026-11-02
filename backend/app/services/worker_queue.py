@@ -48,6 +48,7 @@ class WorkerQueue:
                     expires_at = expires_at.replace(tzinfo=timezone.utc)
                 if expires_at >= now:
                     continue
+                self._event(job.task_id, "worker.lease_expired", "Expired worker lease recovered.", {"attempt": job.attempt})
             elif job.status != WorkerJobStatus.queued:
                 continue
 
@@ -57,11 +58,12 @@ class WorkerQueue:
             job.attempt += 1
             job.lease_owner = worker_id
             job.lease_token_hash = hashlib.sha256(token.encode()).hexdigest()
+            job.lease_started_at = now
             job.lease_expires_at = now + timedelta(seconds=lease_seconds)
             self._event(
                 job.task_id,
                 "worker.leased",
-                "Worker queue lease issued; execution remains disabled.",
+                "Worker queue lease issued to the isolated execution plane.",
                 {"worker_id": worker_id, "attempt": job.attempt},
             )
             self.db.commit()
@@ -81,8 +83,16 @@ class WorkerQueue:
             return None
         now = datetime.now(timezone.utc)
         settings = get_settings()
-        ceiling = now + timedelta(seconds=settings.worker_max_lease_seconds)
-        requested = now + timedelta(seconds=settings.worker_lease_seconds)
+        # Absolute deadline is anchored at claim time: a hostile or stuck runner
+        # cannot renew a lease forever.
+        started_at = job.lease_started_at or now
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+        ceiling = started_at + timedelta(seconds=settings.worker_max_lease_seconds)
+        current_expiry = job.lease_expires_at or now
+        if current_expiry.tzinfo is None:
+            current_expiry = current_expiry.replace(tzinfo=timezone.utc)
+        requested = max(now, current_expiry) + timedelta(seconds=settings.worker_lease_seconds)
         job.lease_expires_at = min(requested, ceiling)
         self.db.commit()
         self.db.refresh(job)
@@ -95,6 +105,7 @@ class WorkerQueue:
         job.last_error = error
         job.lease_owner = None
         job.lease_token_hash = None
+        job.lease_started_at = None
         job.lease_expires_at = None
         retry = job.attempt < job.max_attempts
         job.status = WorkerJobStatus.queued if retry else WorkerJobStatus.failed
@@ -104,6 +115,54 @@ class WorkerQueue:
             "Worker reported a failed attempt; task code was not executed by the API.",
             {"attempt": job.attempt, "retry_scheduled": retry, "error": error},
         )
+        self.db.commit()
+        self.db.refresh(job)
+        return job
+
+    def complete(self, job_id: UUID, token: str, result: dict) -> WorkerJob | None:
+        """Idempotently record a bounded, structured runner result."""
+        job = self._valid_lease(job_id, token)
+        if job is None:
+            return None
+        if job.cancellation_requested_at is not None:
+            return self.cancelled(job_id, token)
+        job.status = WorkerJobStatus.succeeded
+        job.result = result
+        job.lease_owner = None
+        job.lease_token_hash = None
+        job.lease_started_at = None
+        job.lease_expires_at = None
+        task = self.db.get(Task, job.task_id)
+        if task is not None:
+            task.status = TaskStatus.completed
+        self._event(job.task_id, "worker.completed", "Worker completed isolated execution.", {"attempt": job.attempt, "result": result})
+        self.db.commit()
+        self.db.refresh(job)
+        return job
+
+    def request_cancellation(self, task_id: UUID) -> WorkerJob | None:
+        job = self.db.scalar(select(WorkerJob).where(WorkerJob.task_id == task_id).with_for_update())
+        if job is None or job.status in {WorkerJobStatus.succeeded, WorkerJobStatus.failed, WorkerJobStatus.cancelled}:
+            return job
+        job.cancellation_requested_at = datetime.now(timezone.utc)
+        if job.status == WorkerJobStatus.queued:
+            job.status = WorkerJobStatus.cancelled
+        self._event(task_id, "worker.cancellation_requested", "Cancellation requested for worker job.", {})
+        return job
+
+    def cancelled(self, job_id: UUID, token: str) -> WorkerJob | None:
+        job = self._valid_lease(job_id, token)
+        if job is None:
+            return None
+        job.status = WorkerJobStatus.cancelled
+        job.lease_owner = None
+        job.lease_token_hash = None
+        job.lease_started_at = None
+        job.lease_expires_at = None
+        task = self.db.get(Task, job.task_id)
+        if task is not None:
+            task.status = TaskStatus.cancelled
+        self._event(job.task_id, "worker.cancelled", "Worker acknowledged cancellation.", {"attempt": job.attempt})
         self.db.commit()
         self.db.refresh(job)
         return job
@@ -127,12 +186,14 @@ class WorkerQueue:
         return job
 
     def _event(self, task_id: UUID, event_type: str, message: str, payload: dict) -> None:
-        from sqlalchemy import func
+        from sqlalchemy import update
 
-        last = self.db.scalar(
-            select(func.max(TaskEvent.sequence)).where(TaskEvent.task_id == task_id)
-        ) or 0
+        sequence = self.db.execute(
+            update(Task).where(Task.id == task_id).values(event_sequence=Task.event_sequence + 1)
+            .returning(Task.event_sequence)
+        ).scalar_one()
         self.db.add(TaskEvent(
-            task_id=task_id, sequence=last + 1, event_type=event_type,
+            task_id=task_id, sequence=sequence, event_type=event_type,
             message=message, payload=payload,
         ))
+

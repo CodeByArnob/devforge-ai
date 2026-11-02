@@ -11,6 +11,7 @@
 - ZIP project import with traversal, symlink, encrypted-entry, duplicate-path, compression-ratio, entry-count, per-file and total expansion limits.
 - Public GitHub repository import through the official GitHub archive endpoint, with redirect-host validation and the same ZIP safety checks.
 - Language manifest detection for Flutter/Dart, JS/TS, Python, Kotlin/Java, Go, Rust, PHP, Ruby, .NET, C/C++ and Swift.
+- Immutable, checksum-addressed workspace snapshot primitives and a rootless runner policy that never exposes a Docker socket to workloads.
 
 ## Authentication setup
 
@@ -65,7 +66,7 @@ All /api/v1 application endpoints except registration/login require a JWT access
 
 ## Important execution boundary
 
-The agent does NOT execute commands, modify repositories, run tests or produce builds. Never expose the API as a complete autonomous coding service until isolated disposable workers, quotas, rate limits, monitoring, secret redaction, operational deployment controls and a client application are implemented and tested.
+The control plane does not execute commands, modify repositories, run tests or produce builds. Execution belongs only on a separately deployed runner host. The supplied runner policy requires rootless Podman, a digest-pinned image, a non-root user, read-only root filesystem, dropped capabilities, no-new-privileges, seccomp, PID/CPU/RAM/tmpfs and wall-clock bounds, and no network by default. It never accepts a Docker socket or host credentials. Operators must still deploy the runner on dedicated infrastructure with mTLS, default-deny network policy and an approved package proxy before enabling execution.
 
 ## Checks
 
@@ -73,3 +74,4 @@ The agent does NOT execute commands, modify repositories, run tests or produce b
 ruff check backend
 pytest --cov=app
 ```
+

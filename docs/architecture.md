@@ -4,7 +4,7 @@
 - Flutter client: chat, project navigation, activity stream, approvals and artifacts.
 - FastAPI control plane: task/project APIs, model gateway and event persistence.
 - Agent runtime: plan generation and approval checkpoints; execution is not enabled yet.
-- Execution plane: future disposable, isolated workers per task and language.
+- Execution plane: separately deployed rootless runner hosts per task and language; the API has no container runtime socket.
 - Persistence: PostgreSQL task/event metadata and future private object storage.
 
 ## OpenRouter gateway
@@ -18,3 +18,4 @@ The manifest registry recognizes Flutter/Dart, JS/TS, Python, Kotlin/Java, Go, R
 
 ## Next
 Authentication and ownership, project ingestion, workspace snapshots, patch/diff approval, isolated worker runtime, language build adapters, artifact storage and Flutter client.
+

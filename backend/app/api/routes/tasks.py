@@ -1,19 +1,26 @@
 import json
 import time
 from collections.abc import Iterator
+from datetime import datetime, timezone
+from pathlib import Path
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.auth import CurrentUser
 from app.core.config import get_settings
+from app.db.models import PatchProposal, Project
 from app.db.session import get_db
 from app.schemas.task import (
-    TaskApprovalRequest, TaskApprovalResponse, TaskCreate, TaskEventRead, TaskRead,
+    PatchApprovalRequest, PatchProposalRequest, TaskApprovalRequest, TaskApprovalResponse,
+    TaskCreate, TaskEventRead, TaskRead,
 )
+from app.services.patch_service import Change, PatchSafetyError, apply, proposal
 from app.services.task_service import TaskService
+from app.services.workspace_snapshot import create_snapshot
 
 router = APIRouter()
 
@@ -71,6 +78,46 @@ def decide_task_approval(
     return TaskApprovalResponse(task=task, execution_started=False, message=message)
 
 
+@router.post("/tasks/{task_id}/patches", status_code=201)
+def propose_patch(task_id: UUID, payload: PatchProposalRequest, user: CurrentUser, db: Session = Depends(get_db)) -> dict:
+    task = TaskService(db).get(task_id, owner_id=user.id)
+    project = db.scalar(select(Project).where(Project.id == task.project_id, Project.owner_id == user.id)) if task else None
+    if task is None or project is None:
+        raise HTTPException(status_code=404, detail="Task or project not found")
+    snapshots = Path(get_settings().workspace_root) / ".snapshots"
+    try:
+        _, _, base_digest = create_snapshot(Path(project.workspace_path), snapshots)
+        patch_digest, unified_diff, changes = proposal(snapshots / base_digest, [Change(**item.model_dump()) for item in payload.changes])
+    except (PatchSafetyError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    record = PatchProposal(task_id=task.id, base_snapshot_digest=base_digest, patch_digest=patch_digest, changes=changes, unified_diff=unified_diff)
+    db.add(record)
+    db.flush()
+    TaskService(db)._append_event(task.id, "patch.proposed", "Patch proposal awaits owner approval.", {"patch_id": str(record.id), "base_snapshot": base_digest, "patch_digest": patch_digest})
+    db.commit()
+    return {"patch_id": record.id, "base_snapshot_digest": base_digest, "patch_digest": patch_digest, "unified_diff": unified_diff, "status": record.status}
+
+
+@router.post("/tasks/{task_id}/patches/{patch_id}/approve")
+def approve_patch(task_id: UUID, patch_id: UUID, payload: PatchApprovalRequest, user: CurrentUser, db: Session = Depends(get_db)) -> dict:
+    task = TaskService(db).get(task_id, owner_id=user.id)
+    record = db.scalar(select(PatchProposal).where(PatchProposal.id == patch_id, PatchProposal.task_id == task_id).with_for_update())
+    if task is None or record is None:
+        raise HTTPException(status_code=404, detail="Task or patch not found")
+    if record.status != "proposed":
+        raise HTTPException(status_code=409, detail="Patch is no longer awaiting approval")
+    snapshots = Path(get_settings().workspace_root) / ".snapshots"
+    try:
+        _, applied_digest = apply(snapshots / record.base_snapshot_digest, snapshots, record.changes)
+    except (PatchSafetyError, ValueError, OSError) as exc:
+        raise HTTPException(status_code=409, detail=f"Patch could not be applied safely: {exc}") from exc
+    record.status, record.approved_at, record.approval_note = "applied", datetime.now(timezone.utc), payload.note
+    record.applied_snapshot_digest = applied_digest
+    TaskService(db)._append_event(task_id, "patch.applied", "Owner-approved patch applied to a new immutable snapshot.", {"patch_id": str(record.id), "snapshot": applied_digest})
+    db.commit()
+    return {"patch_id": record.id, "status": record.status, "snapshot_digest": applied_digest}
+
+
 @router.get("/tasks/{task_id}/events")
 def stream_task_events(
     task_id: UUID,
@@ -105,3 +152,4 @@ def stream_task_events(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+

@@ -31,7 +31,22 @@ class WorkerFailureRequest(BaseModel):
     error: str = Field(min_length=1, max_length=2000)
 
 
+class WorkerCompletionRequest(BaseModel):
+    lease_token: str = Field(min_length=32, max_length=128)
+    result: dict = Field(default_factory=dict)
+
+
+class WorkerCancellationRequest(BaseModel):
+    lease_token: str = Field(min_length=32, max_length=128)
+
+
 class WorkerReleaseRead(BaseModel):
     job_id: UUID
     status: str
     retry_scheduled: bool
+
+
+class WorkerCompletionRead(BaseModel):
+    job_id: UUID
+    status: str
+

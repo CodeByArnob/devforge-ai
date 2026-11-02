@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.db.models import Project, Task, TaskEvent, TaskStatus
@@ -109,21 +109,26 @@ class TaskService:
             return None
         if task.status not in {TaskStatus.completed, TaskStatus.failed, TaskStatus.cancelled}:
             task.status = TaskStatus.cancelled
+            WorkerQueue(self.db).request_cancellation(task.id)
             self._append_event(task.id, "task.cancelled", "Cancellation recorded.", {})
             self.db.commit()
             self.db.refresh(task)
         return task
 
     def _append_event(self, task_id: UUID, event_type: str, message: str, payload: dict) -> None:
-        last = self.db.scalar(
-            select(func.max(TaskEvent.sequence)).where(TaskEvent.task_id == task_id)
-        ) or 0
+        # Allocate the sequence inside the same transaction as the event. This
+        # is a single atomic UPDATE on PostgreSQL and avoids MAX()+1 races.
+        sequence = self.db.execute(
+            update(Task).where(Task.id == task_id).values(event_sequence=Task.event_sequence + 1)
+            .returning(Task.event_sequence)
+        ).scalar_one()
         self.db.add(
             TaskEvent(
                 task_id=task_id,
-                sequence=last + 1,
+            sequence=sequence,
                 event_type=event_type,
                 message=message,
                 payload=payload,
             )
         )
+

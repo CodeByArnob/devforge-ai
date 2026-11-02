@@ -57,3 +57,18 @@ class TaskEventRead(BaseModel):
     message: str
     payload: dict
     created_at: datetime
+
+
+class PatchChange(BaseModel):
+    path: str = Field(min_length=1, max_length=500)
+    content: str | None = Field(default=None, max_length=500_000)
+    expected_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+
+
+class PatchProposalRequest(BaseModel):
+    changes: list[PatchChange] = Field(min_length=1, max_length=100)
+
+
+class PatchApprovalRequest(BaseModel):
+    note: str | None = Field(default=None, max_length=2000)
+

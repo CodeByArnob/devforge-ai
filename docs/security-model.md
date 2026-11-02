@@ -19,5 +19,8 @@ Treat repository archives, source files, prompts, dependencies, generated patche
 - Never mount Docker socket, host home, SSH agent or cloud credentials into workers.
 - Reject archive traversal, symlink escapes and zip bombs.
 - Require explicit human approval before applying patches, publishing, signing or deploying.
+- Snapshots are content-addressed inventories of regular files only; inspect paths are bounded and reject escapes, symlinks and sensitive directories.
+- Runner workloads must run only through an allowlisted adapter against digest-pinned images, as an unprivileged user with a read-only root filesystem, no capabilities, no-new-privileges, seccomp, bounded resources and default-deny network access.
 
 Authentication and ownership are necessary but not sufficient for production deployment. CORS and UUID task IDs are not security boundaries. Docker Compose credentials are local-only examples.
+

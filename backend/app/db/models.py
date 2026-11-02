@@ -70,6 +70,7 @@ class Task(Base):
     approval_decision: Mapped[str] = mapped_column(String(16), default="not_required")
     approval_note: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     approval_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    event_sequence: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -129,7 +130,12 @@ class WorkerJob(Base):
     max_attempts: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
     lease_owner: Mapped[str | None] = mapped_column(String(128), nullable=True)
     lease_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    lease_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancellation_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    result: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
     last_error: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
@@ -139,3 +145,22 @@ class WorkerJob(Base):
         onupdate=lambda: datetime.now(timezone.utc), nullable=False
     )
     task: Mapped[Task] = relationship()
+
+
+class PatchProposal(Base):
+    """A reviewable change set bound to the exact immutable base snapshot."""
+    __tablename__ = "patch_proposals"
+    __table_args__ = (Index("ix_patch_proposals_task_created", "task_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    task_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tasks.id", ondelete="CASCADE"), index=True)
+    base_snapshot_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    patch_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    changes: Mapped[list] = mapped_column(JSON, nullable=False)
+    unified_diff: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), default="proposed", nullable=False)
+    applied_snapshot_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    approval_note: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+

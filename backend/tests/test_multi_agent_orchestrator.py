@@ -31,7 +31,7 @@ def test_runs_four_specialists_and_aggregates_their_results():
 
     async def handler(request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content)
-        system_prompt = body["messages"][0]["content"]
+        system_prompt = body["messages"][0]["content"] + body["messages"][1]["content"]
         role = next(
             name for name in ("architect", "planner", "security_reviewer", "qa_engineer")
             if f"role: {name}" in system_prompt

@@ -20,12 +20,29 @@ class Settings(BaseSettings):
     jwt_access_token_minutes: int = 30
     allow_registration: bool = False
     workspace_root: str = "./workspace"
+    worker_shared_secret: str = ""
+    worker_lease_seconds: int = 60
+    worker_max_lease_seconds: int = 300
 
     @field_validator("task_event_poll_interval_seconds")
     @classmethod
     def validate_poll_interval(cls, value: float) -> float:
         if not 0.2 <= value <= 10:
             raise ValueError("Poll interval must be between 0.2 and 10 seconds")
+        return value
+
+    @field_validator("worker_lease_seconds")
+    @classmethod
+    def validate_worker_lease(cls, value: int) -> int:
+        if not 15 <= value <= 300:
+            raise ValueError("Worker lease must be between 15 and 300 seconds")
+        return value
+
+    @field_validator("worker_max_lease_seconds")
+    @classmethod
+    def validate_worker_max_lease(cls, value: int) -> int:
+        if not 30 <= value <= 900:
+            raise ValueError("Worker maximum lease must be between 30 and 900 seconds")
         return value
 
     @field_validator("jwt_access_token_minutes")

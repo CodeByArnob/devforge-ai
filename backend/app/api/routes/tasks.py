@@ -48,10 +48,10 @@ def stream_task_events(task_id: UUID, after: int = Query(default=0, ge=0), db: S
                 for event in events:
                     cursor = event.sequence
                     data = json.dumps(TaskEventRead.model_validate(event).model_dump(mode="json"))
-                    yield f"id: {cursor}\\nevent: task\\ndata: {data}\\n\\n"
+                    yield f"id: {cursor}\nevent: task\ndata: {data}\n\n"
             else:
                 idle += 1
-                yield ": keep-alive\\n\\n"
+                yield ": keep-alive\n\n"
                 time.sleep(get_settings().task_event_poll_interval_seconds)
             current = service.get(task_id)
             if current and current.status.value in {"completed", "failed", "cancelled"} and not events:

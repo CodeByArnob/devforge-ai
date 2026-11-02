@@ -14,6 +14,8 @@ class SecureVault {
   String? _accessToken;
   String? _refreshToken;
   String? _openRouterApiKey;
+  String? _githubUsername;
+  String? _githubToken;
 
   bool get isDemoMode => _storage['isDemoMode'] == 'true';
   set isDemoMode(bool value) {
@@ -68,8 +70,31 @@ class SecureVault {
     _vaultUpdates.add('openRouterApiKey');
   }
 
+  String? get githubUsername => _githubUsername;
+  set githubUsername(String? username) {
+    _githubUsername = username;
+    if (username == null) {
+      _storage.remove('githubUsername');
+    } else {
+      _storage['githubUsername'] = username;
+    }
+    _vaultUpdates.add('githubUsername');
+  }
+
+  String? get githubToken => _githubToken;
+  set githubToken(String? token) {
+    _githubToken = token;
+    if (token == null) {
+      _storage.remove('githubToken');
+    } else {
+      _storage['githubToken'] = token;
+    }
+    _vaultUpdates.add('githubToken');
+  }
+
   bool get isAuthenticated => _accessToken != null && _accessToken!.isNotEmpty;
   bool get hasOpenRouterKey => _openRouterApiKey != null && _openRouterApiKey!.isNotEmpty;
+  bool get isGitHubConnected => _githubUsername != null && _githubUsername!.isNotEmpty;
 
   void clearSession() {
     _accessToken = null;
@@ -84,6 +109,8 @@ class SecureVault {
     _accessToken = null;
     _refreshToken = null;
     _openRouterApiKey = null;
+    _githubUsername = null;
+    _githubToken = null;
     _vaultUpdates.add('all_cleared');
   }
 }

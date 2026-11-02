@@ -16,9 +16,29 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  String? _editorFileName;
+  String? _editorCode;
+  String? _editorLanguage;
+  String? _buildTargetProject;
 
   void _switchTab(int index) {
     setState(() => _currentIndex = index);
+  }
+
+  void _openProjectInEditor(String fileName, String code, String language) {
+    setState(() {
+      _editorFileName = fileName;
+      _editorCode = code;
+      _editorLanguage = language;
+      _currentIndex = 3;
+    });
+  }
+
+  void _openProjectInBuilds(String projectName) {
+    setState(() {
+      _buildTargetProject = projectName;
+      _currentIndex = 4;
+    });
   }
 
   void _openSettings() {
@@ -45,10 +65,20 @@ class _HomeScreenState extends State<HomeScreen> {
         onOpenSettings: _openSettings,
         onOpenLocalModels: _openLocalModels,
       ),
-      const ProjectsScreen(),
+      ProjectsScreen(
+        onOpenEditor: _openProjectInEditor,
+        onOpenBuilds: _openProjectInBuilds,
+      ),
       AIStudioScreen(onOpenLocalModels: _openLocalModels),
-      const EditorScreen(),
-      const BuildsScreen(),
+      EditorScreen(
+        initialFileName: _editorFileName,
+        initialCode: _editorCode,
+        initialLanguage: _editorLanguage,
+        onNavigateToBuilds: () => _switchTab(4),
+      ),
+      BuildsScreen(
+        targetProjectName: _buildTargetProject,
+      ),
     ];
 
     return Scaffold(

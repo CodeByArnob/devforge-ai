@@ -2,7 +2,17 @@ import 'package:flutter/material.dart';
 
 class EditorScreen extends StatefulWidget {
   final VoidCallback? onNavigateToBuilds;
-  const EditorScreen({super.key, this.onNavigateToBuilds});
+  final String? initialFileName;
+  final String? initialCode;
+  final String? initialLanguage;
+
+  const EditorScreen({
+    super.key,
+    this.onNavigateToBuilds,
+    this.initialFileName,
+    this.initialCode,
+    this.initialLanguage,
+  });
 
   @override
   State<EditorScreen> createState() => _EditorScreenState();
@@ -10,10 +20,39 @@ class EditorScreen extends StatefulWidget {
 
 class _EditorScreenState extends State<EditorScreen> {
   String _selectedLanguage = 'Dart';
+  late String _currentFileName;
   final List<String> _languages = ['Dart', 'Python', 'JavaScript', 'TypeScript', 'Rust', 'Go', 'HTML', 'SQL'];
 
   late final TextEditingController _codeController;
   bool _isSaved = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentFileName = widget.initialFileName ?? 'LOCAL DRAFT';
+    _selectedLanguage = widget.initialLanguage ?? 'Dart';
+    _codeController = TextEditingController(
+      text: widget.initialCode ?? _templates[_selectedLanguage] ?? '',
+    );
+    _codeController.addListener(() {
+      if (_isSaved) {
+        setState(() => _isSaved = false);
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(EditorScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialCode != null && widget.initialCode != oldWidget.initialCode) {
+      setState(() {
+        _currentFileName = widget.initialFileName ?? 'LOCAL DRAFT';
+        _selectedLanguage = widget.initialLanguage ?? 'Dart';
+        _codeController.text = widget.initialCode!;
+        _isSaved = true;
+      });
+    }
+  }
 
   static const Map<String, String> _templates = {
     'Dart': '''// DevForge AI - Flutter / Dart Mobile Entrypoint
@@ -67,16 +106,7 @@ server.listen(3000, () => console.log('Server running on :3000'));
 ''',
   };
 
-  @override
-  void initState() {
-    super.initState();
-    _codeController = TextEditingController(text: _templates['Dart'] ?? '');
-    _codeController.addListener(() {
-      if (_isSaved) {
-        setState(() => _isSaved = false);
-      }
-    });
-  }
+
 
   @override
   void dispose() {
@@ -224,7 +254,7 @@ server.listen(3000, () => console.log('Server running on :3000'));
                     const Icon(Icons.code_rounded, size: 16, color: Color(0xFF34D399)),
                     const SizedBox(width: 6),
                     Text(
-                      'LOCAL DRAFT',
+                      _currentFileName,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: const Color(0xFF34D399),
                         fontWeight: FontWeight.w800,

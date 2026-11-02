@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class BuildsScreen extends StatefulWidget {
-  const BuildsScreen({super.key});
+  final String? targetProjectName;
+  const BuildsScreen({super.key, this.targetProjectName});
 
   @override
   State<BuildsScreen> createState() => _BuildsScreenState();
@@ -270,6 +271,44 @@ class _BuildsScreenState extends State<BuildsScreen> {
               ),
             ),
             const SizedBox(height: 20),
+
+            if (widget.targetProjectName != null) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF132238),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF1E3A5F)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle_outline, color: Color(0xFF34D399), size: 18),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Target Project Selected', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text(widget.targetProjectName!, style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _triggerBuild('Android APK'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF34D399),
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Build APK Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             // View Published APK releases pill button
             OutlinedButton.icon(

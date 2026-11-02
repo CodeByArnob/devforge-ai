@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:client/core/models/models.dart';
 import 'package:client/core/services/secure_vault.dart';
 import 'package:client/main.dart';
+import 'package:client/ui/screens/ai_studio_screen.dart';
 import 'package:client/ui/screens/home_screen.dart';
 import 'package:client/ui/screens/login_screen.dart';
+import 'package:client/ui/screens/projects_screen.dart';
 
 void main() {
   test('SecureVault stores credentials safely and emits updates', () async {
@@ -103,5 +105,47 @@ void main() {
     expect(find.text('AI Studio'), findsWidgets);
     expect(find.text('Editor'), findsOneWidget);
     expect(find.text('Builds'), findsOneWidget);
+  });
+
+  testWidgets('AIStudioScreen renders full-screen ChatGPT chat interface and settings modal', (WidgetTester tester) async {
+    final vault = SecureVault();
+    vault.enterDemoMode();
+
+    await tester.pumpWidget(const MaterialApp(
+      home: AIStudioScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI Studio'), findsOneWidget);
+    expect(find.text('What should we build?'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.tune_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI & Engine Settings'), findsOneWidget);
+    expect(find.text('Save Settings to Vault'), findsOneWidget);
+  });
+
+  testWidgets('ProjectsScreen allows custom GitHub account connection and repository permission management', (WidgetTester tester) async {
+    final vault = SecureVault();
+    vault.clearAll();
+
+    await tester.pumpWidget(const MaterialApp(
+      home: ProjectsScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Projects'), findsOneWidget);
+    expect(find.text('Connect GitHub Account'), findsOneWidget);
+
+    // Tap connect GitHub account
+    await tester.tap(find.text('Connect GitHub Account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('GitHub Username / Organization'), findsOneWidget);
+    expect(find.text('Personal Access Token (PAT)'), findsOneWidget);
+    expect(find.text('Connect Account'), findsOneWidget);
   });
 }

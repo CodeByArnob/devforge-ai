@@ -1,20 +1,18 @@
 # Architecture
 
-## Boundaries
-- Flutter client: chat, project navigation, activity stream, approvals and artifacts.
-- FastAPI control plane: task/project APIs, model gateway and event persistence.
-- Agent runtime: plan generation and approval checkpoints; execution is not enabled yet.
-- Execution plane: future disposable, isolated workers per task and language.
-- Persistence: PostgreSQL task/event metadata and future private object storage.
+## Control plane
+- Flutter client (planned): chat, projects, approvals, diffs, timeline and artifacts.
+- FastAPI: authenticated project/task APIs, OpenRouter gateway and event persistence.
+- Multi-agent planner: five independent specialists (architecture, implementation, security, QA, reviewer) run concurrently with bounded fan-out and timeout. Their result is persisted and waits for human approval.
 
-## OpenRouter gateway
-The backend retrieves the live model catalogue and filters explicit free model IDs (`:free`) plus the `openrouter/free` router. Chat completions are proxied as Server-Sent Events. The user API key is supplied per request and is not persisted. A future authenticated client should store it in OS secure storage and never ship it inside a repository.
+## Execution plane (not yet implemented)
+A separate worker service must execute jobs in disposable, unprivileged sandboxes. The API process must never execute untrusted project code. Workers should default to no network, read-only base images, bounded writable workspaces, CPU/memory/PID/disk/time quotas, dropped Linux capabilities, seccomp/AppArmor or equivalent, and explicit tool allowlists. Never mount the host Docker socket or user home into a worker.
 
-## Agent lifecycle
-queued -> planning -> awaiting_approval -> editing -> validating -> repairing -> building -> completed. This milestone implements planning and the approval checkpoint only. The task event stream is durable and sequence-numbered.
+## Agent capability boundary
+Current specialist agents have no tools. They receive only the task instruction and must explicitly acknowledge that repository files have not been inspected. Their output is advisory and cannot be treated as a patch, test result or build artifact. Human approval remains mandatory before future patch application.
 
-## Language adapters
-The manifest registry recognizes Flutter/Dart, JS/TS, Python, Kotlin/Java, Go, Rust, PHP, Ruby, .NET, C/C++ and Swift. It detects project types only; it does not execute their toolchains.
+## Model gateway
+The backend retrieves the live OpenRouter catalogue and filters explicit free model IDs (`:free`) plus `openrouter/free`. User keys are request-scoped and not persisted. Do not silently fall back to paid models.
 
-## Next
-Authentication and ownership, project ingestion, workspace snapshots, patch/diff approval, isolated worker runtime, language build adapters, artifact storage and Flutter client.
+## Event lifecycle
+queued -> planning -> awaiting_approval -> editing -> validating -> repairing -> building -> completed. This release implements parallel planning and event persistence only; later states are not yet executable.

@@ -108,9 +108,12 @@ pip install -e ".[dev]"
 # Apply database migrations
 alembic upgrade head
 
-# Start local FastAPI server
+# Start local FastAPI server (ensure terminal is in the project root directory)
 uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+> [!TIP]
+> Ensure your active terminal is located in the `devforge-ai` project directory before running `uvicorn`. If you opened a new terminal at `C:\Users\<username>`, run `cd devforge-ai` first.
+
 The API Swagger documentation will be available at: `http://localhost:8000/docs`.
 
 ### Step 3: Runner Engine Setup

@@ -3,6 +3,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.auth import CurrentUser
+from app.db.models import User
 from app.db.session import get_db
 from app.schemas.ai import AgentRunRequest
 from app.schemas.task import TaskRead
@@ -16,11 +18,14 @@ router = APIRouter(prefix="/tasks", tags=["agent"])
 async def run_agent(
     task_id: UUID,
     payload: AgentRunRequest,
+    user: CurrentUser,
     x_openrouter_api_key: str = Header(..., alias="X-OpenRouter-Api-Key", min_length=10, max_length=512),
     db: Session = Depends(get_db),
 ) -> TaskRead:
     try:
-        task, _ = await AgentRuntime(db).create_plan(task_id, x_openrouter_api_key, payload.model)
+        task, _ = await AgentRuntime(db).create_plan(
+            task_id, x_openrouter_api_key, payload.model, owner_id=user.id
+        )
         return task
     except LookupError as exc:
         raise HTTPException(status_code=404, detail="Task not found") from exc

@@ -25,6 +25,11 @@ class TaskCreate(BaseModel):
     selected_model: str | None = Field(default=None, max_length=255)
 
 
+class TaskApprovalRequest(BaseModel):
+    decision: str = Field(pattern="^(approved|rejected)$")
+    note: str | None = Field(default=None, max_length=2000)
+
+
 class TaskRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
@@ -32,8 +37,17 @@ class TaskRead(BaseModel):
     instruction: str
     status: TaskStatus
     selected_model: str | None
+    approval_decision: str
+    approval_note: str | None
+    approval_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
+
+class TaskApprovalResponse(BaseModel):
+    task: TaskRead
+    execution_started: bool = False
+    message: str
 
 
 class TaskEventRead(BaseModel):

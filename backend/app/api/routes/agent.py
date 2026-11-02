@@ -1,11 +1,12 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.auth import CurrentUser
 from app.db.session import get_db
-from app.schemas.ai import AgentRunRequest
+from app.schemas.ai import AgentRunRequest, AgentTeamPlan
 from app.schemas.task import TaskRead
 from app.services.agent_runtime import AgentRuntime
 from app.services.openrouter_gateway import OpenRouterError
@@ -13,19 +14,30 @@ from app.services.openrouter_gateway import OpenRouterError
 router = APIRouter(prefix="/tasks", tags=["agent"])
 
 
-@router.post("/{task_id}/agent/run", response_model=TaskRead, summary="Generate an implementation plan")
+class AgentTeamRunResponse(BaseModel):
+    task: TaskRead
+    team_plan: AgentTeamPlan
+
+
+@router.post(
+    "/{task_id}/agent/run",
+    response_model=AgentTeamRunResponse,
+    summary="Run the multi-agent planning team",
+)
 async def run_agent(
     task_id: UUID,
     payload: AgentRunRequest,
     user: CurrentUser,
-    x_openrouter_api_key: str = Header(..., alias="X-OpenRouter-Api-Key", min_length=10, max_length=512),
+    x_openrouter_api_key: str = Header(
+        ..., alias="X-OpenRouter-Api-Key", min_length=10, max_length=512
+    ),
     db: Session = Depends(get_db),
-) -> TaskRead:
+) -> AgentTeamRunResponse:
     try:
-        task, _ = await AgentRuntime(db).create_plan(
+        task, team_plan = await AgentRuntime(db).create_plan(
             task_id, x_openrouter_api_key, payload.model, owner_id=user.id
         )
-        return task
+        return AgentTeamRunResponse(task=task, team_plan=team_plan)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail="Task not found") from exc
     except ValueError as exc:

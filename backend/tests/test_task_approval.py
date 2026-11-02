@@ -51,8 +51,9 @@ def test_owner_can_approve_plan_without_starting_execution():
         assert approved.approval_note == "Reviewed"
         assert approved.approval_at is not None
         events = service.events(task.id, owner_id=owner.id)
-        assert events[-1].event_type == "task.approval.approved"
-        assert events[-1].payload["execution_started"] is False
+        assert events[-2].event_type == "task.approval.approved"
+        assert events[-2].payload["execution_started"] is False
+        assert events[-1].event_type == "worker.queued"
 
 
 def test_rejection_cancels_task_and_records_event():

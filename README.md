@@ -43,7 +43,7 @@ An autonomous software engineering platform built with FastAPI, Podman rootless 
 ## 🎬 Live Motion Graphics Showcase
 
 <p align="center">
-  <b>DevForge AI Mobile IDE — Live End-to-End Workflow</b><br/>
+  <b>DevForge AI Mobile IDE - Live End-to-End Workflow</b><br/>
   <sub>Automated agent synthesis, multi-language editing, and one-tap cloud compilation from mobile</sub><br/><br/>
   <img src="docs/assets/devforge_mobile_demo.gif" alt="DevForge Mobile Live Workflow" width="70%" style="border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);" />
 </p>
@@ -93,8 +93,8 @@ The platform is designed around three core principles:
 | [`DevForgeAI-v1.0.0-release.apk`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/DevForgeAI-v1.0.0-release.apk) | Universal / arm64 | 17.0 MB | Fast 1-click installer |
 | [`DevForgeAI-v1.0.0-armeabi-v7a.apk`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/DevForgeAI-v1.0.0-armeabi-v7a.apk) | armeabi-v7a | 14.5 MB | 32-bit legacy devices |
 | [`DevForgeAI-v1.0.0-x86_64.apk`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/DevForgeAI-v1.0.0-x86_64.apk) | x86_64 | 18.4 MB | Chromebooks & PC Emulators |
-| [`SHA256SUMS.txt`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/SHA256SUMS.txt) | All | — | Cryptographic SHA-256 Checksums |
-| [`SIGNING-CERTIFICATE.txt`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/SIGNING-CERTIFICATE.txt) | All | — | Persistent Upload Key Fingerprints |
+| [`SHA256SUMS.txt`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/SHA256SUMS.txt) | All | - | Cryptographic SHA-256 Checksums |
+| [`SIGNING-CERTIFICATE.txt`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/SIGNING-CERTIFICATE.txt) | All | - | Persistent Upload Key Fingerprints |
 
 > [!IMPORTANT]
 > **Signing and installation compatibility**: The current v1.0.0 APK was built and verified with the persistent release key whose SHA-256 certificate fingerprint is:

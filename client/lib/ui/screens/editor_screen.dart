@@ -16,7 +16,7 @@ class _EditorScreenState extends State<EditorScreen> {
   bool _isSaved = true;
 
   static const Map<String, String> _templates = {
-    'Dart': '''// DevForge AI — Flutter / Dart Mobile Entrypoint
+    'Dart': '''// DevForge AI - Flutter / Dart Mobile Entrypoint
 import 'package:flutter/material.dart';
 
 void main() => runApp(const MyApp());
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
   }
 }
 ''',
-    'Python': '''# DevForge AI — Python FastAPI Microservice
+    'Python': '''# DevForge AI - Python FastAPI Microservice
 from fastapi import FastAPI
 
 app = FastAPI(title="DevForge AI API", version="1.0.0")
@@ -51,7 +51,7 @@ def read_root():
 def read_item(item_id: int):
     return {"item_id": item_id, "active": True}
 ''',
-    'JavaScript': '''// DevForge AI — Node.js REST API
+    'JavaScript': '''// DevForge AI - Node.js REST API
 const http = require('http');
 
 const server = http.createServer((req, res) => {

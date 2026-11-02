@@ -13,6 +13,11 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # The bootstrap migration uses metadata.create_all; tolerate a table
+    # already created from current model metadata on a fresh database.
+    inspector = sa.inspect(op.get_bind())
+    if "worker_jobs" in inspector.get_table_names():
+        return
     op.create_table(
         "worker_jobs",
         sa.Column("id", sa.Uuid(), nullable=False),
@@ -42,5 +47,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_worker_jobs_claim", table_name="worker_jobs")
-    op.drop_table("worker_jobs")
+    if "worker_jobs" in sa.inspect(op.get_bind()).get_table_names():
+        op.drop_index("ix_worker_jobs_claim", table_name="worker_jobs")
+        op.drop_table("worker_jobs")

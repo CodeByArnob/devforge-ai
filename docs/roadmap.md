@@ -1,34 +1,29 @@
 # Roadmap
 
-## Phase 0 — Backend foundation
-- [x] FastAPI, PostgreSQL/SQLite persistence and CI
-- [x] Durable task events and SSE replay
-- [x] Language manifest detection
+## Backend foundation
+- [x] FastAPI, database persistence, Alembic and CI
+- [x] JWT identity and per-user project/task authorization
+- [x] ZIP and public GitHub repository import
+- [x] OpenRouter streaming gateway and free-model enforcement
 
-## Phase 1 — OpenRouter and planning
-- [x] Live OpenRouter free-model catalogue
-- [x] SSE chat proxy with request-scoped provider key
-- [x] Planning-only agent and approval checkpoint
+## Multi-agent orchestration
+- [x] Five specialist planning roles: architect, implementer, security, QA and reviewer
+- [x] Concurrent specialist execution with bounded fan-out and request timeout
+- [x] Persisted team-plan event and explicit human approval checkpoint
+- [ ] Repository-aware context retrieval and token-budgeted file selection
+- [ ] Agent tool registry with scoped capabilities and audit logs
+- [ ] Implementer patch generation and independent reviewer feedback loop
+- [ ] Human-approved patch application and bounded repair cycles
 
-## Phase 2 — Project ingestion and identity
-- [x] ZIP import with archive safety limits
-- [x] Public GitHub repository import
-- [x] JWT registration/login with Argon2 password hashing
-- [x] User identity, project ownership and tenant-scoped project/task/agent APIs
-- [x] Additive Alembic migration for user identity and project ownership
-- [ ] Account recovery, token revocation/rotation and persistent rate limiting
-- [ ] GitHub App/OAuth integration and immutable source snapshots
-- [ ] Verified ownership reassignment workflow for legacy unowned projects
+## Execution and delivery
+- [ ] Isolated worker service with disposable containers, non-root user, no network by default, CPU/memory/PID/disk/time limits
+- [ ] Language-specific dependency, lint, test and build adapters
+- [ ] Artifact storage, checksum, provenance and download authorization
+- [ ] Worker lifecycle, retries, cancellation, idempotency and dead-letter handling
 
-## Phase 3 — Autonomous execution
-- [ ] Disposable isolated workers with CPU/memory/disk/network limits
-- [ ] Tool registry and language-specific lint/test/build adapters
-- [ ] Patch generation, diff approval and bounded repair loops
-- [ ] Artifact storage, provenance and audit history
+## Client and operations
+- [ ] Flutter client: project import, chat, task timeline, diffs, approvals, artifacts
+- [ ] Persistent rate limits, quotas, account recovery, token revocation and audit retention
+- [ ] Production deployment, backups, metrics, tracing, alerting and incident runbooks
 
-## Phase 4 — Client and local models
-- [ ] Flutter chat workspace, secure key vault and live activity timeline
-- [ ] Project explorer, diff viewer, approvals and artifact viewer
-- [ ] Local GGUF catalogue with license, checksum, ABI and RAM validation
-
-**Production status:** Identity and tenant authorization are now implemented in the backend branch, but the complete product is not production-ready. It still lacks isolated workers, code editing/execution, verification/build pipelines, the Flutter client, operational monitoring, persistent abuse controls and a deployment hardening review.
+**Current boundary:** Multi-agent endpoint performs independent planning/review only. It has no repository or shell tools and does not modify code or run builds. The full product is not production-ready.

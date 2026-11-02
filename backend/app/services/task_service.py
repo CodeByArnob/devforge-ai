@@ -1,10 +1,11 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import Project, Task, TaskEvent, TaskStatus
-from app.schemas.task import TaskCreate
+from app.schemas.task import TaskApprovalRequest, TaskCreate
 
 
 class TaskService:
@@ -54,6 +55,50 @@ class TaskService:
             statement = statement.where(Project.owner_id == owner_id)
         statement = statement.order_by(TaskEvent.sequence.asc()).limit(200)
         return list(self.db.scalars(statement))
+
+    def decide_approval(
+        self,
+        task_id: UUID,
+        payload: TaskApprovalRequest,
+        owner_id: UUID | None = None,
+    ) -> Task | None:
+        statement = (
+            select(Task).join(Project).where(Task.id == task_id).with_for_update()
+        )
+        if owner_id is not None:
+            statement = statement.where(Project.owner_id == owner_id)
+        task = self.db.scalar(statement)
+        if task is None:
+            return None
+        if task.status != TaskStatus.awaiting_approval:
+            raise ValueError("Only tasks awaiting approval can receive an approval decision.")
+        if task.approval_decision != "not_required":
+            raise ValueError("An approval decision has already been recorded.")
+
+        decision_time = datetime.now(timezone.utc)
+        task.approval_decision = payload.decision
+        task.approval_note = payload.note
+        task.approval_at = decision_time
+        if payload.decision == "rejected":
+            task.status = TaskStatus.cancelled
+        self._append_event(
+            task.id,
+            f"task.approval.{payload.decision}",
+            (
+                "Plan approved by the project owner; execution remains disabled until "
+                "a sandbox worker is deployed."
+                if payload.decision == "approved"
+                else "Plan rejected by the project owner; task cancelled."
+            ),
+            {
+                "decision": payload.decision,
+                "note": payload.note,
+                "execution_started": False,
+            },
+        )
+        self.db.commit()
+        self.db.refresh(task)
+        return task
 
     def cancel(self, task_id: UUID, owner_id: UUID | None = None) -> Task | None:
         task = self.get(task_id, owner_id)

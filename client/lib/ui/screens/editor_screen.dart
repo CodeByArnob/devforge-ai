@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class EditorScreen extends StatefulWidget {
-  const EditorScreen({super.key});
+  final VoidCallback? onNavigateToBuilds;
+  const EditorScreen({super.key, this.onNavigateToBuilds});
 
   @override
   State<EditorScreen> createState() => _EditorScreenState();
@@ -14,19 +15,62 @@ class _EditorScreenState extends State<EditorScreen> {
   late final TextEditingController _codeController;
   bool _isSaved = true;
 
-  static const String _defaultCode = '''// Welcome to DevForge AI
-// This is an offline-ready local scratch file.
-// Connect a GitHub repository to enable repository editing.
+  static const Map<String, String> _templates = {
+    'Dart': '''// DevForge AI — Flutter / Dart Mobile Entrypoint
+import 'package:flutter/material.dart';
 
-void main() {
-  print('Build something remarkable.');
+void main() => runApp(const MyApp());
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData.dark(useMaterial3: true),
+      home: Scaffold(
+        appBar: AppBar(title: const Text('DevForge AI App')),
+        body: const Center(
+          child: Text('Built directly from Android with DevForge AI!'),
+        ),
+      ),
+    );
+  }
 }
-''';
+''',
+    'Python': '''# DevForge AI — Python FastAPI Microservice
+from fastapi import FastAPI
+
+app = FastAPI(title="DevForge AI API", version="1.0.0")
+
+@app.get("/")
+def read_root():
+    return {"status": "healthy", "engine": "DevForge AI Sandbox"}
+
+@app.get("/items/{item_id}")
+def read_item(item_id: int):
+    return {"item_id": item_id, "active": True}
+''',
+    'JavaScript': '''// DevForge AI — Node.js REST API
+const http = require('http');
+
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({
+    service: 'DevForge AI Runner',
+    timestamp: new Date().toISOString(),
+    sandbox: 'podman-rootless'
+  }));
+});
+
+server.listen(3000, () => console.log('Server running on :3000'));
+''',
+  };
 
   @override
   void initState() {
     super.initState();
-    _codeController = TextEditingController(text: _defaultCode);
+    _codeController = TextEditingController(text: _templates['Dart'] ?? '');
     _codeController.addListener(() {
       if (_isSaved) {
         setState(() => _isSaved = false);
@@ -40,6 +84,16 @@ void main() {
     super.dispose();
   }
 
+  void _loadTemplate(String lang) {
+    setState(() {
+      _selectedLanguage = lang;
+      if (_templates.containsKey(lang)) {
+        _codeController.text = _templates[lang]!;
+      }
+      _isSaved = true;
+    });
+  }
+
   void _saveCode() {
     setState(() => _isSaved = true);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -48,7 +102,7 @@ void main() {
           children: [
             const Icon(Icons.check_circle_outline, color: Color(0xFF34D399), size: 18),
             const SizedBox(width: 8),
-            Text('Saved $_selectedLanguage scratch file locally'),
+            Text('Saved $_selectedLanguage file locally to device'),
           ],
         ),
         backgroundColor: const Color(0xFF1E293B),
@@ -57,30 +111,58 @@ void main() {
     );
   }
 
-  void _clearEditor() {
-    showDialog(
+  void _showTemplatesModal() {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF121A29),
-        title: const Text('Reset Editor?', style: TextStyle(color: Colors.white, fontSize: 16)),
-        content: const Text('Do you want to reset to the default starter code?', style: TextStyle(color: Color(0xFF94A3B8))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() {
-                _codeController.text = _defaultCode;
-                _isSaved = true;
-              });
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade900),
-            child: const Text('Reset'),
-          ),
-        ],
+      backgroundColor: const Color(0xFF121A29),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.dashboard_customize_outlined, color: Color(0xFF38BDF8), size: 20),
+                SizedBox(width: 8),
+                Text('Starter Project Templates', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text('Choose a template to quickly scaffold and build your mobile project:', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5)),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.flutter_dash, color: Color(0xFF38BDF8)),
+              title: const Text('Flutter Material 3 App', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: const Text('Mobile UI with dark theme & widgets', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _loadTemplate('Dart');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.data_object, color: Color(0xFF34D399)),
+              title: const Text('Python FastAPI Service', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: const Text('Microservice endpoints with Swagger UI', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _loadTemplate('Python');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.javascript, color: Color(0xFFFBBF24)),
+              title: const Text('Node.js Backend API', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: const Text('Lightweight HTTP server container', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11.5)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _loadTemplate('JavaScript');
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -100,12 +182,17 @@ void main() {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.auto_stories_outlined, color: Color(0xFF818CF8)),
+            tooltip: 'Starter Templates',
+            onPressed: _showTemplatesModal,
+          ),
+          IconButton(
             icon: const Icon(Icons.delete_outline, color: Color(0xFF94A3B8)),
             tooltip: 'Reset editor',
-            onPressed: _clearEditor,
+            onPressed: () => _loadTemplate(_selectedLanguage),
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 16.0, top: 8.0, bottom: 8.0),
+            padding: const EdgeInsets.only(right: 14.0, top: 8.0, bottom: 8.0),
             child: ElevatedButton.icon(
               onPressed: _saveCode,
               icon: const Icon(Icons.save_outlined, size: 16),
@@ -167,7 +254,7 @@ void main() {
                         );
                       }).toList(),
                       onChanged: (val) {
-                        if (val != null) setState(() => _selectedLanguage = val);
+                        if (val != null) _loadTemplate(val);
                       },
                     ),
                   ),

@@ -1,1 +1,4 @@
-﻿416fc87069794dc81686b6aea516ca611b88fa1ac0b46b7f3a88d601670a6823  DevForgeAI-v1.0.0-release.apk
+﻿bae6e44ef5e140d2ac783231bbb874869e07f47650222095a37782f25b922c35  DevForgeAI-v1.0.0-release.apk
+bae6e44ef5e140d2ac783231bbb874869e07f47650222095a37782f25b922c35  DevForgeAI-v1.0.0-arm64-v8a.apk
+89acec280bd80949ac0ce2e0f690a404c90f2a9d2060bad5ca8a77e8dc8c832b  DevForgeAI-v1.0.0-armeabi-v7a.apk
+5b49d87d2910b11d37ddadd5d4ecbfdc57a4243d7afa1a253acdc8a732a1b27c  DevForgeAI-v1.0.0-x86_64.apk

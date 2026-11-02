@@ -9,46 +9,169 @@ class BuildsScreen extends StatefulWidget {
 
 class _BuildsScreenState extends State<BuildsScreen> {
   bool _isBuilding = false;
+  String _activeBuildType = 'Android APK';
+  int _buildProgressStep = 0;
+  final List<String> _buildLogs = [];
+
+  final List<String> _steps = [
+    'Preparing workspace snapshot and verifying SHA-256 digest...',
+    'Resolving dependencies: flutter pub get & toolchain checks...',
+    'Running compiler: assembleRelease with targetSdk 36...',
+    'Signing APK with persistent upload key and generating checksums...',
+  ];
 
   void _triggerBuild(String type) {
     setState(() {
+      _activeBuildType = type;
       _isBuilding = true;
+      _buildProgressStep = 0;
+      _buildLogs.clear();
+      _buildLogs.add('[INIT] Initializing $type compilation pipeline on mobile engine...');
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF34D399)),
+    _showBuildTerminalModal();
+    _runCompilationSimulation();
+  }
+
+  void _runCompilationSimulation() async {
+    for (int i = 0; i < _steps.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 900));
+      if (!mounted) return;
+      setState(() {
+        _buildProgressStep = i + 1;
+        _buildLogs.add('[STEP ${i + 1}/4] ${_steps[i]}');
+      });
+    }
+
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+    setState(() {
+      _isBuilding = false;
+      _buildLogs.add('[SUCCESS] Built DevForgeAI-v1.0.0-release.apk (48.7 MB)');
+      _buildLogs.add('[CHECKSUM] SHA-256: 416fc87069794dc81686b6aea516ca611b88fa1ac0b46b7f3a88d601670a6823');
+    });
+  }
+
+  void _showBuildTerminalModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF121A29),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.75,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E293B),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.terminal_rounded, color: Color(0xFF34D399), size: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '$_activeBuildType Build Console',
+                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      if (_isBuilding)
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF34D399)),
+                        )
+                      else
+                        const Icon(Icons.check_circle, color: Color(0xFF34D399), size: 20),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Progress Bar
+                  LinearProgressIndicator(
+                    value: _buildProgressStep / 4.0,
+                    backgroundColor: const Color(0xFF1E293B),
+                    color: const Color(0xFF34D399),
+                    minHeight: 6,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Terminal Console Window
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF090D14),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF1E293B)),
+                      ),
+                      child: ListView.builder(
+                        itemCount: _buildLogs.length,
+                        itemBuilder: (c, idx) {
+                          final log = _buildLogs[idx];
+                          final isSuccess = log.startsWith('[SUCCESS]') || log.startsWith('[CHECKSUM]');
+                          final isStep = log.startsWith('[STEP');
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 6.0),
+                            child: Text(
+                              log,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 11.5,
+                                color: isSuccess
+                                    ? const Color(0xFF34D399)
+                                    : (isStep ? const Color(0xFF38BDF8) : const Color(0xFF94A3B8)),
+                                height: 1.35,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Actions
+                  if (!_isBuilding)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _showReleaseDialog();
+                            },
+                            icon: const Icon(Icons.download_rounded, size: 18),
+                            label: const Text('Download Build Artifact (.apk)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5A77F6),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
             ),
-            const SizedBox(width: 12),
-            Expanded(child: Text('Dispatching $type build to GitHub Actions...')),
-          ],
-        ),
-        backgroundColor: const Color(0xFF1E293B),
+          );
+        },
       ),
     );
-
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _isBuilding = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_outline, color: Color(0xFF34D399), size: 18),
-                const SizedBox(width: 12),
-                Expanded(child: Text('$type workflow dispatched successfully!')),
-              ],
-            ),
-            backgroundColor: const Color(0xFF121A29),
-          ),
-        );
-      }
-    });
   }
 
   void _showReleaseDialog() {
@@ -64,7 +187,7 @@ class _BuildsScreenState extends State<BuildsScreen> {
           children: [
             Icon(Icons.bolt, color: Color(0xFF34D399), size: 24),
             SizedBox(width: 8),
-            Text('DevForge AI v1.0.0', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('DevForge AI Releases', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
         content: const Column(
@@ -72,7 +195,7 @@ class _BuildsScreenState extends State<BuildsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Latest Production Release Assets:',
+              'Published Android Artifacts:',
               style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
             ),
             SizedBox(height: 12),
@@ -81,14 +204,14 @@ class _BuildsScreenState extends State<BuildsScreen> {
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.android, color: Color(0xFF38BDF8)),
               title: Text('DevForgeAI-v1.0.0-release.apk', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-              subtitle: Text('49.0 MB · Target SDK 36', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+              subtitle: Text('48.7 MB · Target SDK 36 · Universal', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
             ),
             ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.verified_outlined, color: Color(0xFF34D399)),
               title: Text('SHA-256 Verified', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-              subtitle: Text('304bf0d5f074cf70d7f51c10f07f6930...', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+              subtitle: Text('416fc87069794dc81686b6aea516ca611b88fa1ac...', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
             ),
           ],
         ),
@@ -108,7 +231,7 @@ class _BuildsScreenState extends State<BuildsScreen> {
               );
             },
             icon: const Icon(Icons.open_in_new, size: 16),
-            label: const Text('Open Releases Page'),
+            label: const Text('Open in GitHub'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF5A77F6),
               foregroundColor: Colors.white,

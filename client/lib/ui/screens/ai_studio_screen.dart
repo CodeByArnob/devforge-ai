@@ -34,6 +34,13 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
   PatchProposalModel? _proposedPatch;
   String? _patchDecision;
 
+  final List<String> _quickPrompts = [
+    'Build Flutter Todo App with Material 3',
+    'Fix Android Cleartext Socket Exception',
+    'Implement Hardened Podman Sandbox Policy',
+    'Create Python FastAPI JWT Auth Router',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -76,18 +83,15 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
     });
 
     try {
-      // Create and trigger agent workflow
       final task = await _api.createTask('proj-demo-1', prompt, model: _modelIdController.text.trim());
       await _api.runAgentTeam(task.id, model: _modelIdController.text.trim());
 
-      // Listen to streaming multi-agent events
       await for (final event in _api.streamTaskEvents(task.id)) {
         if (!mounted) break;
         setState(() => _events.add(event));
-        await Future.delayed(const Duration(milliseconds: 300));
+        await Future.delayed(const Duration(milliseconds: 250));
       }
 
-      // Fetch patch proposal
       final patches = await _api.listPatches(task.id);
       if (mounted && patches.isNotEmpty) {
         setState(() => _proposedPatch = patches.first);
@@ -290,6 +294,23 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
               icon: const Icon(Icons.lock_outline, size: 14, color: Color(0xFF818CF8)),
               label: const Text('Save securely', style: TextStyle(color: Color(0xFF818CF8), fontSize: 12)),
             ),
+          ),
+          const SizedBox(height: 12),
+
+          // Quick prompt chips
+          const Text('Quick Suggestions', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: _quickPrompts.map((p) {
+              return ActionChip(
+                backgroundColor: const Color(0xFF121A29),
+                side: const BorderSide(color: Color(0xFF1E293B)),
+                label: Text(p, style: const TextStyle(fontSize: 11, color: Color(0xFFCBD5E1))),
+                onPressed: () => setState(() => _promptController.text = p),
+              );
+            }).toList(),
           ),
           const SizedBox(height: 12),
 

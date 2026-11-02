@@ -94,6 +94,83 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
+  void _showImportDialog() {
+    final ownerCtrl = TextEditingController(text: 'CodeByArnob');
+    final repoCtrl = TextEditingController(text: 'devforge-ai');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF121A29),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF1E293B)),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.add_circle_outline, color: Color(0xFF34D399), size: 22),
+            SizedBox(width: 8),
+            Text('Import GitHub Repo', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter owner and repository name to clone into isolated workspace:',
+              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: ownerCtrl,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: const InputDecoration(
+                labelText: 'Owner / Organization',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: repoCtrl,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: const InputDecoration(
+                labelText: 'Repository Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Cloning and importing ${ownerCtrl.text}/${repoCtrl.text}...'),
+                  backgroundColor: const Color(0xFF1E293B),
+                ),
+              );
+              try {
+                await _api.importGitHub(ownerCtrl.text.trim(), repoCtrl.text.trim());
+                await _loadProjects();
+              } catch (_) {}
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF34D399),
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('Import Project', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showInventory(ProjectModel project) async {
     try {
       final inv = await _api.getProjectInventory(project.id);
@@ -152,14 +229,24 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
           children: [
             // Header
-            const Text(
-              'Projects',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Projects',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline, color: Color(0xFF34D399)),
+                  tooltip: 'Import Repository',
+                  onPressed: _showImportDialog,
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             const Text(
@@ -254,15 +341,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             const SizedBox(height: 24),
 
             // Section: Your repositories
-            const Text(
-              'Your repositories',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Your repositories',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: _showImportDialog,
+                  icon: const Icon(Icons.add, size: 16, color: Color(0xFF38BDF8)),
+                  label: const Text('Add Repo', style: TextStyle(color: Color(0xFF38BDF8), fontSize: 12)),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             const Text(
               'Connect GitHub to load your repositories.\nOnly repositories granted to the DevForge GitHub App can be used for private project operations.',
               style: TextStyle(

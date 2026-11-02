@@ -10,7 +10,9 @@ from sqlalchemy.orm import Session
 from app.core.auth import CurrentUser
 from app.core.config import get_settings
 from app.db.session import get_db
-from app.schemas.task import TaskCreate, TaskEventRead, TaskRead
+from app.schemas.task import (
+    TaskApprovalRequest, TaskApprovalResponse, TaskCreate, TaskEventRead, TaskRead,
+)
 from app.services.task_service import TaskService
 
 router = APIRouter()
@@ -41,6 +43,32 @@ def get_task(task_id: UUID, user: CurrentUser, db: Session = Depends(get_db)) ->
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+@router.post(
+    "/tasks/{task_id}/approval",
+    response_model=TaskApprovalResponse,
+    summary="Approve or reject an agent plan",
+)
+def decide_task_approval(
+    task_id: UUID,
+    payload: TaskApprovalRequest,
+    user: CurrentUser,
+    db: Session = Depends(get_db),
+) -> TaskApprovalResponse:
+    try:
+        task = TaskService(db).decide_approval(task_id, payload, owner_id=user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    message = (
+        "Approval recorded. Code execution has not started because the isolated worker "
+        "runtime is not yet available."
+        if payload.decision == "approved"
+        else "Plan rejected and task cancelled."
+    )
+    return TaskApprovalResponse(task=task, execution_started=False, message=message)
 
 
 @router.get("/tasks/{task_id}/events")

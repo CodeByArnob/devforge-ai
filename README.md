@@ -24,16 +24,22 @@ infra/                API container image
 ## Run locally
 Requires Python 3.12+.
 ```bash
-cd backend
 python -m venv .venv
 # Windows: .venv\\Scripts\\activate
 # macOS/Linux: source .venv/bin/activate
 pip install -e ".[dev]"
-uvicorn app.main:app --reload
+uvicorn app.main:app --app-dir backend --reload
 ```
 API docs: http://localhost:8000/docs
 
 Or run API + PostgreSQL with `docker compose up --build`.
+
+## Quality checks
+```bash
+ruff check backend
+ruff format --check backend
+pytest
+```
 
 ## Current endpoints
 - `GET /health`
@@ -44,13 +50,5 @@ Or run API + PostgreSQL with `docker compose up --build`.
 - `POST /api/v1/tasks/{task_id}/cancel`
 
 Task creation currently records a queued task; it does **not** execute code. A secured worker runtime is a later milestone.
-
-## Quality checks
-```bash
-cd backend
-ruff check .
-ruff format --check .
-pytest
-```
 
 See [Architecture](docs/architecture.md), [Security Model](docs/security-model.md), and [Roadmap](docs/roadmap.md). MIT licensed.

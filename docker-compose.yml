@@ -1,8 +1,8 @@
 services:
   api:
     build:
-      context: ./backend
-      dockerfile: ../infra/Dockerfile.api
+      context: .
+      dockerfile: infra/Dockerfile.api
     environment:
       APP_ENV: development
       DATABASE_URL: postgresql+psycopg://devforge:devforge_local_only@db:5432/devforge

@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import Task, TaskEvent, TaskStatus
+from app.db.models import Project, Task, TaskEvent, TaskStatus
 from app.schemas.task import TaskCreate
 
 
@@ -12,7 +12,14 @@ class TaskService:
         self.db = db
 
     def create(self, payload: TaskCreate) -> Task:
-        task = Task(project_id=payload.project_id, instruction=payload.instruction, selected_model=payload.selected_model, status=TaskStatus.queued)
+        if self.db.get(Project, payload.project_id) is None:
+            raise LookupError("Project not found.")
+        task = Task(
+            project_id=payload.project_id,
+            instruction=payload.instruction,
+            selected_model=payload.selected_model,
+            status=TaskStatus.queued,
+        )
         self.db.add(task)
         self.db.flush()
         self._append_event(task.id, "task.queued", "Task accepted and queued.", {})
@@ -28,7 +35,12 @@ class TaskService:
         return list(self.db.scalars(statement))
 
     def events(self, task_id: UUID, after: int = 0) -> list[TaskEvent]:
-        statement = select(TaskEvent).where(TaskEvent.task_id == task_id, TaskEvent.sequence > after).order_by(TaskEvent.sequence.asc()).limit(200)
+        statement = (
+            select(TaskEvent)
+            .where(TaskEvent.task_id == task_id, TaskEvent.sequence > after)
+            .order_by(TaskEvent.sequence.asc())
+            .limit(200)
+        )
         return list(self.db.scalars(statement))
 
     def cancel(self, task_id: UUID) -> Task | None:
@@ -43,5 +55,15 @@ class TaskService:
         return task
 
     def _append_event(self, task_id: UUID, event_type: str, message: str, payload: dict) -> None:
-        last = self.db.scalar(select(func.max(TaskEvent.sequence)).where(TaskEvent.task_id == task_id)) or 0
-        self.db.add(TaskEvent(task_id=task_id, sequence=last + 1, event_type=event_type, message=message, payload=payload))
+        last = self.db.scalar(
+            select(func.max(TaskEvent.sequence)).where(TaskEvent.task_id == task_id)
+        ) or 0
+        self.db.add(
+            TaskEvent(
+                task_id=task_id,
+                sequence=last + 1,
+                event_type=event_type,
+                message=message,
+                payload=payload,
+            )
+        )

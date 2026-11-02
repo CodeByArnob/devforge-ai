@@ -3,7 +3,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 WORKDIR /srv/devforge
 RUN groupadd --system app && useradd --system --gid app --home-dir /srv/devforge app
 COPY pyproject.toml ./
-COPY backend/app ./app
+COPY backend/app ./backend/app
 RUN pip install --no-cache-dir .
 USER app
 EXPOSE 8000

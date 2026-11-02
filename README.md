@@ -1,43 +1,114 @@
+<div align="center">
+
+# DevForge AI
+
+### Autonomous Multi-Language Software Development Platform. One Private Workspace.
+
+An autonomous software engineering platform built with FastAPI, Podman rootless sandboxes, 8 AI specialist agents, and Flutter (Material 3).
+
+<br/>
+
 <p align="center">
-  <img src="docs/assets/banner.png" alt="DevForge AI Banner" width="100%" />
+  <a href="https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/DevForgeAI-v1.0.0-release.apk">
+    <img src="https://img.shields.io/badge/DOWNLOAD-LATEST%20APK%20V1.0.0-7C3AED?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
+  </a>
+  <a href="https://github.com/CodeByArnob/devforge-ai/releases/tag/v1.0.0">
+    <img src="https://img.shields.io/badge/RELEASE-NOTES-0D9488?style=for-the-badge&logo=github&logoColor=white" alt="Release Notes" />
+  </a>
+  <a href="https://codebyarnob.github.io/devforge-ai/">
+    <img src="https://img.shields.io/badge/VISIT-PROJECT%20WEBSITE-0284C7?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Website" />
+  </a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml"><img src="https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml/badge.svg" alt="Backend & Runner CI" /></a>
-  <a href="https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml"><img src="https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml/badge.svg" alt="Flutter Client CI" /></a>
-  <a href="https://github.com/CodeByArnob/devforge-ai/releases"><img src="https://img.shields.io/github/v/release/CodeByArnob/devforge-ai?color=brightgreen&label=Release" alt="Latest Release" /></a>
-  <a href="SECURITY.md"><img src="https://img.shields.io/badge/Security-Hardened_Sandboxes-blue.svg" alt="Security Policy" /></a>
-  <a href="https://github.com/CodeByArnob/devforge-ai/releases/latest"><img src="https://img.shields.io/badge/Android%20APK-Download-orange?logo=android" alt="Download Android APK" /></a>
+  <img src="https://img.shields.io/badge/Version-1.0.0-blue?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/Android-API%2024--36-brightgreen?style=flat-square&logo=android" alt="Android" />
+  <img src="https://img.shields.io/badge/Python-3.12+-blue?style=flat-square&logo=python" alt="Python" />
+  <img src="https://img.shields.io/badge/Flutter-3.44+-02569B?style=flat-square&logo=flutter" alt="Flutter" />
+  <img src="https://img.shields.io/badge/Design-Material%203-purple?style=flat-square" alt="Material 3" />
+  <img src="https://img.shields.io/badge/Sandbox-Podman%20Rootless-892CA0?style=flat-square" alt="Podman" />
+  <a href="https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml"><img src="https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml/badge.svg" alt="Backend CI" /></a>
+  <a href="https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml"><img src="https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml/badge.svg" alt="Flutter CI" /></a>
+  <img src="https://img.shields.io/badge/License-Apache--2.0-blue?style=flat-square" alt="License" />
 </p>
 
-<h3 align="center">Autonomous, Multi-Language Software Development Platform</h3>
+<br/>
 
-<p align="center">
-  DevForge AI unifies disposable Podman container sandboxes, an 8-role autonomous specialist agent team, copy-on-write workspace snapshots with human-in-the-loop diff approvals, and a cross-platform Flutter client for Android, Web, and Windows.
-</p>
+<img src="docs/assets/banner.png" alt="DevForge AI Architecture Banner" width="100%" />
+
+</div>
 
 ---
 
-## 📸 Application Showcase
+## Overview
+
+DevForge AI unifies disposable execution sandboxing, autonomous multi-agent planning, and local-first client controls into one comprehensive workspace. It manages repository ingestion, multi-agent code proposals, diff review, build validation, and terminal execution across Flutter, Java, Python, and JavaScript/TypeScript projects.
+
+The platform is designed around three core principles:
+
+- **Local-first & Isolated**: Untrusted workload execution is strictly confined to disposable rootless Podman sandboxes with UID `65532:65532`, read-only root filesystems, dropped capabilities (`cap-drop=ALL`), and default-deny networking (`--network=none`). Zero host Docker sockets or credentials are ever mounted.
+- **Autonomous Specialist Team**: 8 dedicated agents (`architect`, `planner`, `coder`, `security_reviewer`, `qa_engineer`, `build_engineer`, `repair_engineer`, `integration_engineer`) collaborate via structured JSON schemas, request-scoped keys, and strictly enforced free model routing (`:free` / `openrouter/free`).
+- **Human-in-the-Loop Verification**: Automated code changes generate unified diffs staged in copy-on-write scratch areas. Precondition `sha256` checksums ensure changes match inspected source trees, and human approval is required before mutating any project files.
+
+---
+
+## Project detail
+
+| Project detail | Value |
+| :--- | :--- |
+| **Application ID** | `com.devforge.ai.client` |
+| **Current release** | **v1.0.0 · versionCode 1** |
+| **Minimum Android** | Android 7.0 · API 24 |
+| **Target Android** | API 36 (Android 15+) |
+| **Control Plane** | FastAPI · Python 3.12+ |
+| **Execution Sandbox** | Podman (Rootless, UID 65532, `--network=none`) |
+| **Multi-Agent Engine** | 8 Specialist Agents · OpenRouter Free Router |
+| **Database & Migrations** | PostgreSQL / SQLite · Alembic Schema v0008 |
+| **Client Framework** | Flutter 3.44+ (Material 3 Dark Theme) |
+| **Supported Platforms** | Android (APK) · Web (Chrome/Edge) · Windows Desktop |
+| **License** | Apache-2.0 |
+
+---
+
+## Download
+
+### DevForge AI v1.0.0
+**The latest published Android release**
+
+[Download the APK](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/DevForgeAI-v1.0.0-release.apk) · [Release page and other assets](https://github.com/CodeByArnob/devforge-ai/releases/tag/v1.0.0)
+
+| File | Description |
+| :--- | :--- |
+| [`DevForgeAI-v1.0.0-release.apk`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/DevForgeAI-v1.0.0-release.apk) | Production Android installer (48.8 MB) |
+| [`SHA256SUMS.txt`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/SHA256SUMS.txt) | SHA-256 checksums |
+| [`SIGNING-CERTIFICATE.txt`](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/SIGNING-CERTIFICATE.txt) | APK signing certificate details |
+
+> [!IMPORTANT]
+> **Signing and installation compatibility**: The current v1.0.0 APK was built and verified with the persistent release key whose SHA-256 certificate fingerprint is:
+> `94:BB:DD:18:24:54:01:13:7B:4D:AD:89:20:48:20:43:85:EB:B3:DE:81:EC:D2:45:24:C3:B4:22:AC:17:30:88`
+
+---
+
+## Application Showcase
 
 <p align="center">
   <b>Autonomous Agent Workspace & Live Timeline</b><br/>
-  <img src="docs/screenshots/01_agent_timeline_chat.png" alt="DevForge Agent Workspace" width="95%" />
+  <img src="docs/screenshots/01_agent_timeline_chat.png" alt="DevForge Agent Workspace" width="100%" />
 </p>
 
 <p align="center">
   <b>Human-in-the-Loop Unified Diff Viewer & Precondition Validation</b><br/>
-  <img src="docs/screenshots/02_diff_viewer_approval.png" alt="Unified Diff Viewer" width="95%" />
+  <img src="docs/screenshots/02_diff_viewer_approval.png" alt="Unified Diff Viewer" width="100%" />
 </p>
 
 <p align="center">
   <b>Local Open-Source Model Catalogue & Capacity Sizing</b><br/>
-  <img src="docs/screenshots/03_local_models_catalogue.png" alt="Local GGUF Models" width="95%" />
+  <img src="docs/screenshots/03_local_models_catalogue.png" alt="Local GGUF Models" width="100%" />
 </p>
 
 ---
 
-## 🏛️ System Architecture
+## Architecture & Multi-Agent Collaboration
 
 ```
                       ┌──────────────────────────────────────┐
@@ -66,126 +137,50 @@
                       └──────────────────────────────────────┘
 ```
 
----
+### Specialist Agent Matrix
 
-## ⚡ Core Capabilities
-
-### 1. Autonomous Multi-Agent Specialist Team (8 Roles)
-- **Architect**: High-level system design, module boundaries, and folder hierarchy.
-- **Planner**: Bounded phased execution roadmaps with milestones.
-- **Coder**: Structured patch proposals with file checksum preconditions.
-- **Security Reviewer**: Automated vulnerability auditing, OWASP boundary checks, and secret leakage prevention.
-- **QA Engineer**: Test plan design, edge case generation, and regression suites.
-- **Build Engineer**: Toolchain configuration, dependency pinning, and packaging.
-- **Repair Engineer**: Fast root-cause analysis and automated patch synthesis.
-- **Integration Engineer**: End-to-end integration, API contract verification, and docs.
-- *Strictly routes to free OpenRouter models (`:free` / `openrouter/free`) with zero ambient keys.*
-
-### 2. Disposable Sandbox Execution Runtime (`runner/`)
-- Rootless Podman container sandbox with unprivileged user (`65532:65532`).
-- Read-only root filesystem, dropped Linux capabilities (`cap-drop=ALL`), and `no-new-privileges`.
-- Default-deny networking (`--network=none` or strictly controlled package proxy).
-- Hard CPU quotas, RAM limits, PID ceilings, wall-clock timeouts, and stdout/stderr truncation caps.
-- Strict rejection of ambient Docker sockets, host credentials, or sensitive mounts.
-
-### 3. Safe Workspace Snapshots & Reversible Patches
-- Cross-platform traversal protection (DOS devices `CON/PRN/AUX/NUL`, Alternate Data Streams, UNC paths, and null bytes).
-- Precondition file checksum verification (`sha256`) guaranteeing patch validity before modification.
-- Unified diff generation with staging in copy-on-write scratch directories.
-- Human approval gate required before applying any agent proposal.
-- Atomic rollback and immutable source snapshots.
-
-### 4. Resilient Worker Queue Lifecycle
-- Atomic job claiming with SHA-256 hashed lease tokens.
-- Periodic heartbeats with maximum lease extension ceilings.
-- Cancellation detection and automated recovery of expired worker leases.
-- Strict bounded retries (max 3) and monotonic, gapless event sequence numbering.
-
-### 5. Multi-Language Tool Registry & Adapters
-- **Flutter / Dart**: `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build`.
-- **Java / JVM**: Gradle (`gradlew test assemble`) and Maven (`mvn test package`).
-- **Python**: `pip install`, `ruff check`, `pytest`.
-- **JavaScript / TypeScript**: `npm install`, `eslint`, `npm test`, `npm run build`.
-
-### 6. Local GGUF Model Catalogue
-- Validates model architecture, license suitability, SHA-256 checksums, and ABI requirements (AVX2/CUDA/Vulkan).
-- Dynamic RAM and VRAM sizing calculations based on parameter counts and context lengths.
-
-### 7. Flutter Android & Desktop Client (`client/`)
-- Complete Material 3 dark-themed application configured for Android (`com.devforge.ai.client`), Web, and Windows.
-- Secure Vault storing OpenRouter API keys and JWT access/refresh tokens in-memory or encrypted storage.
-- Live SSE activity timeline visualizing multi-agent progress in real time.
-- Colorized unified diff viewer with single-tap patch approvals and rejections.
+| Agent Role | Primary Focus | Output Schema / Permissions |
+| :--- | :--- | :--- |
+| **Architect** | System design, directory tree, boundary analysis | Architectural blueprint & module contracts |
+| **Planner** | Phased milestone decomposition | Ordered action steps & checkpoints |
+| **Coder** | Concrete code generation | Precondition-checksum structured patches |
+| **Security Reviewer** | SAST, secret leakage, OWASP boundaries | Vulnerability risk audit & mitigation gates |
+| **QA Engineer** | Test harness design, edge cases, assertions | Test execution plans & regression coverage |
+| **Build Engineer** | Dependency lockfiles, toolchain configs | Build, compile, and package commands |
+| **Repair Engineer** | Root-cause analysis & automated fix loop | Targeted bugfix unified diff proposals |
+| **Integration Engineer** | Contract compliance, E2E validation | Final release readiness report & documentation |
 
 ---
 
-## 🚀 Quickstart
+## Contributing
 
-### Prerequisites
-- Python 3.12+
-- Flutter 3.24+ (Flutter 3.44+ supported)
-- Podman (for isolated execution runner) or Python mock driver for local testing
+We welcome community contributions, feature proposals, and bug reports! Follow these guidelines to contribute professionally:
 
-### 1. Control Plane Setup
-```bash
-git clone https://github.com/CodeByArnob/devforge-ai.git
-cd devforge-ai
+1. **Fork & Branch**:
+   ```bash
+   git checkout -b feat/your-feature-name
+   ```
+2. **Setup Local Environment**:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
+   pip install -e ".[dev]"
+   alembic upgrade head
+   ```
+3. **Verify Tests**:
+   - Backend: `pytest` (77 tests)
+   - Linter: `ruff check backend runner`
+   - Client: `cd client && flutter test && flutter analyze`
+4. **Submit PR**: Open a pull request against `main`. All GitHub Actions CI checks must pass green before merge.
 
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
-
-# Configure environment
-cp .env.example .env
-# Ensure JWT_SECRET is set to a secure 32+ char key
-
-# Run migrations and launch server
-alembic upgrade head
-uvicorn app.main:app --app-dir backend --reload --port 8000
-```
-
-### 2. Runner Service Setup
-```bash
-# In a dedicated terminal:
-python -m runner.runner_service --control-plane http://localhost:8000 --token dev-worker-token
-```
-
-### 3. Flutter Client Setup
-```bash
-cd client
-flutter pub get
-
-# Run on Chrome
-flutter run -d chrome
-
-# Or run on connected Android device / emulator
-flutter run -d android
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines.
 
 ---
 
-## 🧪 Verification & Tests
+## License
 
-### Backend & Runner Verification
-```bash
-# Run complete test suite (77 tests)
-pytest --cov=app
+DevForge AI is distributed under the [Apache-2.0 License](LICENSE).
 
-# Run linter
-ruff check backend runner
-```
+**DevForge AI · Built for clarity, control and local-first personal software engineering.**
 
-### Flutter Client Verification
-```bash
-cd client
-flutter test
-flutter analyze
-flutter build apk --debug
-```
-
----
-
-## 🛡️ License & Security
-- Licensed under the Apache 2.0 License.
-- See [SECURITY.md](SECURITY.md) for vulnerability disclosure and sandbox containment policies.
-- See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+[Download](https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/DevForgeAI-v1.0.0-release.apk) · [Website](https://codebyarnob.github.io/devforge-ai/) · [Report an issue](https://github.com/CodeByArnob/devforge-ai/issues)

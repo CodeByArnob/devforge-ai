@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevForge AI — Autonomous Multi-Language Development Platform</title>
+  <link rel="icon" type="image/png" href="assets/app_icon.png">
+  <meta name="description" content="Autonomous software engineering platform with hardened Podman sandboxes, 8 specialist AI agents, copy-on-write workspace snapshots, and native Flutter client.">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #141b2d;
+      --card-border: #23304e;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #4f80e2;
+      --primary-hover: #3b6bd1;
+      --accent: #26c6da;
+      --green: #22c55e;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+    /* Nav */
+    header {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .brand img { width: 38px; height: 38px; border-radius: 8px; }
+    .nav-links { display: flex; gap: 20px; align-items: center; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: #fff; }
+    .btn-gh {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #fff !important;
+      border: 1px solid var(--card-border);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 70px 0 50px;
+      text-align: center;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(79, 128, 226, 0.15);
+      border: 1px solid rgba(79, 128, 226, 0.3);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 54px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 18px;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--text-muted);
+      max-width: 780px;
+      margin: 0 auto 36px;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--primary), #3b6bd1);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(79, 128, 226, 0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(79, 128, 226, 0.5);
+    }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 14px 26px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn-secondary:hover { background: #1e263c; }
+
+    /* Showcase Carousel/Grid */
+    .showcase {
+      margin: 40px 0 80px;
+    }
+    .showcase-banner {
+      width: 100%;
+      border-radius: var(--radius);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      margin-bottom: 30px;
+    }
+    .screenshot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .screenshot-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .screenshot-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--primary);
+    }
+    .screenshot-card img { width: 100%; display: block; border-bottom: 1px solid var(--card-border); }
+    .screenshot-card .caption { padding: 16px; }
+    .screenshot-card h4 { font-size: 16px; margin-bottom: 4px; color: #fff; }
+    .screenshot-card p { font-size: 13px; color: var(--text-muted); }
+
+    /* Features Grid */
+    .section-title {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .section-title h2 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+    .section-title p { color: var(--text-muted); font-size: 16px; }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 80px;
+    }
+    .feature-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 28px;
+      border-radius: var(--radius);
+    }
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+    .feature-box h3 { font-size: 18px; margin-bottom: 10px; color: #fff; }
+    .feature-box p { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+
+    /* Tech Specs Table */
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 80px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+    }
+    .specs-table th, .specs-table td {
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid var(--card-border);
+      font-size: 14px;
+    }
+    .specs-table th { background: #1a2236; color: var(--text-muted); font-weight: 600; width: 35%; }
+    .specs-table td { color: var(--text-main); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 40px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container nav">
+      <a href="#" class="brand">
+        <img src="assets/app_icon.png" alt="DevForge Logo">
+        <span>DevForge AI</span>
+      </a>
+      <div class="nav-links">
+        <a href="#showcase">Screenshots</a>
+        <a href="#features">Architecture</a>
+        <a href="#specs">Specs</a>
+        <a href="https://github.com/CodeByArnob/devforge-ai" class="btn-gh" target="_blank">★ GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="badge-pill">
+        <span>●</span> Official Production Release v1.0.0
+      </div>
+      <h1>Autonomous Multi-Language<br/>AI Coding Platform</h1>
+      <p>Hardened disposable Podman sandboxes, an 8-role specialist AI agent team, safe copy-on-write workspace snapshots with human-in-the-loop diff approvals, and a native Material 3 client.</p>
+
+      <div class="hero-actions">
+        <a href="https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/DevForgeAI-v1.0.0-release.apk" class="btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.414 13.8533 8.166 12 8.166s-3.5902.248-5.1368.7837L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.689-7.5743-6.1185-9.4396"/></svg>
+          Download Android APK (v1.0.0)
+        </a>
+        <a href="https://github.com/CodeByArnob/devforge-ai" class="btn-secondary" target="_blank">
+          View on GitHub
+        </a>
+        <a href="https://github.com/CodeByArnob/devforge-ai/releases/tag/v1.0.0" class="btn-secondary" target="_blank">
+          Release Notes
+        </a>
+      </div>
+
+      <img src="assets/banner.png" alt="DevForge AI Architecture Banner" class="showcase-banner">
+    </section>
+
+    <section id="showcase" class="showcase">
+      <div class="section-title">
+        <h2>Native Application Experience</h2>
+        <p>Built with Flutter 3.44+ and Material 3 Dark Theme for Android, Web, and Desktop.</p>
+      </div>
+
+      <div class="screenshot-grid">
+        <div class="screenshot-card">
+          <img src="screenshots/01_agent_timeline_chat.png" alt="Autonomous Agent Timeline">
+          <div class="caption">
+            <h4>Live Agent Timeline</h4>
+            <p>Monitors 8 specialist agents in real-time via resilient SSE event streaming.</p>
+          </div>
+        </div>
+        <div class="screenshot-card">
+          <img src="screenshots/02_diff_viewer_approval.png" alt="Unified Diff Viewer">
+          <div class="caption">
+            <h4>Diff Viewer & Approvals</h4>
+            <p>Precondition checksum verification and human-in-the-loop review before workspace modifications.</p>
+          </div>
+        </div>
+        <div class="screenshot-card">
+          <img src="screenshots/03_local_models_catalogue.png" alt="Local GGUF Models">
+          <div class="caption">
+            <h4>Local GGUF Catalogue</h4>
+            <p>Automatic RAM/VRAM capacity sizing, ABI validation, and open-source license checks.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="section-title">
+        <h2>Enterprise Architecture & Containment</h2>
+        <p>Engineered with zero compromises on security, container isolation, and model boundaries.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="feature-box">
+          <div class="feature-icon">🛡️</div>
+          <h3>Disposable Sandboxes</h3>
+          <p>Rootless Podman containers operating with non-root UID 65532, read-only root filesystems, dropped capabilities, and default-deny networking (--net=none).</p>
+        </div>
+        <div class="feature-box">
+          <div class="feature-icon">🤖</div>
+          <h3>8 Specialist AI Agents</h3>
+          <p>Architect, Planner, Coder, Security Reviewer, QA Engineer, Build Engineer, Repair Engineer, and Integration Engineer strictly using free OpenRouter models.</p>
+        </div>
+        <div class="feature-box">
+          <div class="feature-icon">⚡</div>
+          <h3>Safe Workspace Snapshots</h3>
+          <p>Cross-platform path traversal defenses against DOS reserved devices, alternate data streams, and null bytes, backed by atomic rollback.</p>
+        </div>
+        <div class="feature-box">
+          <div class="feature-icon">🔐</div>
+          <h3>Secure Key Vault</h3>
+          <p>Client-side credential management for OpenRouter API keys and JWT access/refresh tokens. Zero ambient credentials exposed.</p>
+        </div>
+        <div class="feature-box">
+          <div class="feature-icon">🔄</div>
+          <h3>Fenced Worker Leases</h3>
+          <p>Atomic job claims with SHA-256 hashed lease tokens, periodic heartbeats, cancellation detection, and automatic expiry recovery.</p>
+        </div>
+        <div class="feature-box">
+          <div class="feature-icon">📦</div>
+          <h3>Multi-Language Tool Registry</h3>
+          <p>Language-specific build, test, and dependency adapters for Flutter/Dart, Java (Gradle/Maven), Python, and JavaScript/TypeScript.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="specs">
+      <div class="section-title">
+        <h2>Project Specifications</h2>
+        <p>Production release details and target build parameters.</p>
+      </div>
+
+      <table class="specs-table">
+        <tbody>
+          <tr><th>Application ID</th><td>com.devforge.ai.client</td></tr>
+          <tr><th>Current Release</th><td>v1.0.0 · versionCode 1</td></tr>
+          <tr><th>Minimum Android</th><td>Android 7.0 · API 24</td></tr>
+          <tr><th>Target Android</th><td>API 36 (Android 15+)</td></tr>
+          <tr><th>Backend Control Plane</th><td>FastAPI · Python 3.12+</td></tr>
+          <tr><th>Isolated Sandboxing</th><td>Podman (Rootless, UID 65532, --network=none)</td></tr>
+          <tr><th>Database & Migrations</th><td>PostgreSQL / SQLite · Alembic v0008</td></tr>
+          <tr><th>Frontend Architecture</th><td>Flutter 3.44+ (Material 3 Dark Theme)</td></tr>
+          <tr><th>License</th><td>Apache-2.0</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>DevForge AI · Built for autonomous development, verified safety, and local-first control.</p>
+      <p style="margin-top: 8px;">
+        <a href="https://github.com/CodeByArnob/devforge-ai/releases/download/v1.0.0/DevForgeAI-v1.0.0-release.apk">Download APK</a> •
+        <a href="https://github.com/CodeByArnob/devforge-ai">GitHub</a> •
+        <a href="https://github.com/CodeByArnob/devforge-ai/issues">Report Issue</a> •
+        <a href="https://github.com/CodeByArnob/devforge-ai/blob/main/LICENSE">Apache-2.0 License</a>
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.auth import CurrentUser
-from app.db.models import User
 from app.db.session import get_db
 from app.schemas.ai import AgentRunRequest
 from app.schemas.task import TaskRead

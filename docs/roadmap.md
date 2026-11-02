@@ -10,11 +10,15 @@
 - [x] SSE chat proxy with request-scoped provider key
 - [x] Planning-only agent and approval checkpoint
 
-## Phase 2 — Project ingestion and access baseline
-- [x] ZIP import with path traversal, symlink, encryption, entry-count and expansion limits
-- [x] Optional shared API-token authentication; production mode fails closed without configuration
-- [ ] Persistent user identities, per-user project ownership and quotas
+## Phase 2 — Project ingestion and identity
+- [x] ZIP import with archive safety limits
+- [x] Public GitHub repository import
+- [x] JWT registration/login with Argon2 password hashing
+- [x] User identity, project ownership and tenant-scoped project/task/agent APIs
+- [x] Additive Alembic migration for user identity and project ownership
+- [ ] Account recovery, token revocation/rotation and persistent rate limiting
 - [ ] GitHub App/OAuth integration and immutable source snapshots
+- [ ] Verified ownership reassignment workflow for legacy unowned projects
 
 ## Phase 3 — Autonomous execution
 - [ ] Disposable isolated workers with CPU/memory/disk/network limits
@@ -27,13 +31,4 @@
 - [ ] Project explorer, diff viewer, approvals and artifact viewer
 - [ ] Local GGUF catalogue with license, checksum, ABI and RAM validation
 
-**Production status:** This repository is a backend milestone, not yet a production-ready autonomous coding product. It must not execute untrusted code until isolated workers, user-level authorization, quotas, migration management and operational monitoring are implemented.
-
-## Database and project persistence milestone
-- [x] Persist imported project metadata and expose project list/detail endpoints.
-- [x] Enforce task-to-project references at the service layer and relational schema level.
-- [x] Add Alembic migration environment and initial schema revision.
-- [x] Remove automatic `Base.metadata.create_all()` from API startup.
-- [x] Run migrations before the single API container starts.
-- [ ] Add multi-user identity, project ownership, and tenant-scoped authorization before public deployment.
-- [ ] Add migration coverage for upgrades from every supported legacy schema.
+**Production status:** Identity and tenant authorization are now implemented in the backend branch, but the complete product is not production-ready. It still lacks isolated workers, code editing/execution, verification/build pipelines, the Flutter client, operational monitoring, persistent abuse controls and a deployment hardening review.

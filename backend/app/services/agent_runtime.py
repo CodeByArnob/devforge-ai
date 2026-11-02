@@ -19,8 +19,10 @@ class AgentRuntime:
         self.db = db
         self.tasks = TaskService(db)
 
-    async def create_plan(self, task_id: UUID, api_key: str, model: str | None) -> tuple[Task, AgentPlan]:
-        task = self.tasks.get(task_id)
+    async def create_plan(
+        self, task_id: UUID, api_key: str, model: str | None, owner_id: UUID | None = None
+    ) -> tuple[Task, AgentPlan]:
+        task = self.tasks.get(task_id, owner_id=owner_id)
         if task is None:
             raise LookupError("Task not found")
         if task.status in {TaskStatus.completed, TaskStatus.failed, TaskStatus.cancelled}:

@@ -1,3 +1,4 @@
+import asyncio
 import io
 import zipfile
 from pathlib import Path
@@ -16,8 +17,7 @@ def make_zip() -> bytes:
     return buffer.getvalue()
 
 
-@pytest.mark.asyncio
-async def test_imports_public_github_archive(tmp_path: Path):
+def test_imports_public_github_archive(tmp_path: Path):
     archive = make_zip()
     seen = []
 
@@ -30,37 +30,34 @@ async def test_imports_public_github_archive(tmp_path: Path):
             )
         return httpx.Response(200, content=archive, headers={"Content-Length": str(len(archive))})
 
-    result = await import_public_repository(
+    result = asyncio.run(import_public_repository(
         "acme", "demo", tmp_path, "main", httpx.MockTransport(handler)
-    )
+    ))
     assert len(seen) == 2
     assert result["file_count"] == 2
     assert (Path(result["workspace_path"]) / "demo" / "package.json").exists()
 
 
-@pytest.mark.asyncio
-async def test_rejects_untrusted_redirect(tmp_path: Path):
+def test_rejects_untrusted_redirect(tmp_path: Path):
     async def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(302, headers={"Location": "https://attacker.example/archive.zip"})
 
     with pytest.raises(GitHubImportError, match="not trusted"):
-        await import_public_repository(
+        asyncio.run(import_public_repository(
             "acme", "demo", tmp_path, transport=httpx.MockTransport(handler)
-        )
+        ))
 
 
-@pytest.mark.asyncio
-async def test_rejects_invalid_ref_before_network(tmp_path: Path):
+def test_rejects_invalid_ref_before_network(tmp_path: Path):
     with pytest.raises(GitHubImportError, match="Invalid Git reference"):
-        await import_public_repository("acme", "demo", tmp_path, "../secrets")
+        asyncio.run(import_public_repository("acme", "demo", tmp_path, "../secrets"))
 
 
-@pytest.mark.asyncio
-async def test_reports_missing_public_repository(tmp_path: Path):
+def test_reports_missing_public_repository(tmp_path: Path):
     async def handler(_: httpx.Request) -> httpx.Response:
         return httpx.Response(404)
 
     with pytest.raises(GitHubImportError, match="not found"):
-        await import_public_repository(
+        asyncio.run(import_public_repository(
             "acme", "missing", tmp_path, transport=httpx.MockTransport(handler)
-        )
+        ))

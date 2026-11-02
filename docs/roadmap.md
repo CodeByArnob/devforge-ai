@@ -1,30 +1,30 @@
 # Roadmap
 
-## Phase 0 — Foundation
-- [x] FastAPI backend, task/event persistence, SSE event replay
-- [x] Language manifest detection, Docker Compose, CI and baseline tests
+## Phase 0 — Backend foundation
+- [x] FastAPI, PostgreSQL/SQLite persistence and CI
+- [x] Durable task events and SSE replay
+- [x] Language manifest detection
 
-## Phase 1 — Model gateway and agent planning
-- [x] Live OpenRouter model catalogue with explicit free-model filtering
-- [x] OpenRouter chat-completion SSE proxy; API key is request-scoped and never persisted
-- [x] Agent planning runtime with durable activity events and approval checkpoint
-- [ ] Flutter chat client, key management and model selector UI
-- [ ] Authentication, per-user quotas and encrypted provider-key vault
+## Phase 1 — OpenRouter and planning
+- [x] Live OpenRouter free-model catalogue
+- [x] SSE chat proxy with request-scoped provider key
+- [x] Planning-only agent and approval checkpoint
 
-## Phase 2 — Secure project ingestion
-- [ ] ZIP upload with archive-bomb/path-traversal defenses
-- [ ] GitHub App/OAuth integration and least-privilege project access
-- [ ] Immutable source snapshots and workspace lifecycle
+## Phase 2 — Project ingestion and access baseline
+- [x] ZIP import with path traversal, symlink, encryption, entry-count and expansion limits
+- [x] Optional shared API-token authentication; production mode fails closed without configuration
+- [ ] Persistent user identities, per-user project ownership and quotas
+- [ ] GitHub App/OAuth integration and immutable source snapshots
 
 ## Phase 3 — Autonomous execution
-- [ ] Evaluate OpenHands SDK and LangGraph for durable orchestration
-- [ ] Sandboxed tool registry and disposable isolated workers
-- [ ] Language-specific lint/test/build adapters and resource quotas
-- [ ] Patch generation, diff approval, bounded repair loops and artifact provenance
+- [ ] Disposable isolated workers with CPU/memory/disk/network limits
+- [ ] Tool registry and language-specific lint/test/build adapters
+- [ ] Patch generation, diff approval and bounded repair loops
+- [ ] Artifact storage, provenance and audit history
 
-## Phase 4 — Local models and client
-- [ ] Local GGUF runtime catalogue with license/checksum/RAM validation
-- [ ] Flutter chat workspace, live activity timeline and reconnect/replay
-- [ ] Diff viewer, approval UX, project explorer and artifact viewer
+## Phase 4 — Client and local models
+- [ ] Flutter chat workspace, secure key vault and live activity timeline
+- [ ] Project explorer, diff viewer, approvals and artifact viewer
+- [ ] Local GGUF catalogue with license, checksum, ABI and RAM validation
 
-A milestone is complete only after tests, failure-path checks and documentation match shipped behavior.
+**Production status:** This repository is a backend milestone, not yet a production-ready autonomous coding product. It must not execute untrusted code until isolated workers, user-level authorization, quotas, migration management and operational monitoring are implemented.

@@ -1,4 +1,3 @@
-import json
 from collections.abc import AsyncIterator
 from typing import Any
 

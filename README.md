@@ -10,6 +10,19 @@
 - Optional shared API-token protection for all application routes except liveness. Production mode fails closed when no token is configured.
 - Language manifest detection for Flutter/Dart, JS/TS, Python, Kotlin/Java, Go, Rust, PHP, Ruby, .NET, C/C++ and Swift.
 
+## Database migrations
+
+The API no longer creates or mutates database schemas during startup. Apply versioned migrations before starting the service:
+
+```bash
+alembic upgrade head
+uvicorn app.main:app --app-dir backend --reload
+```
+
+Docker startup runs `alembic upgrade head` before Uvicorn. For an existing pre-migration development database, back it up first; the initial migration creates missing tables but does not retrofit every constraint onto pre-existing tables. Review and test a database-specific migration before promoting an existing database.
+
+Project imports are persisted in the `projects` table. Use `GET /api/v1/projects` and `GET /api/v1/projects/{project_id}` to retrieve project metadata. Tasks must reference an existing project.
+
 ## Run locally
 ```bash
 python -m venv .venv

@@ -6,6 +6,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.health import router as health_router
 from app.api.routes.projects import router as projects_router
 from app.api.routes.tasks import router as tasks_router
+from app.api.routes.worker import router as worker_router
 from app.core.auth import get_current_user
 from app.core.config import get_settings
 
@@ -17,3 +18,6 @@ api_router.include_router(ai_router, prefix=get_settings().api_v1_prefix, depend
 api_router.include_router(tasks_router, prefix=get_settings().api_v1_prefix, tags=["tasks"], dependencies=protected)
 api_router.include_router(agent_router, prefix=get_settings().api_v1_prefix, dependencies=protected)
 api_router.include_router(projects_router, prefix=get_settings().api_v1_prefix, dependencies=protected)
+
+# Internal worker endpoints use a separate shared-secret dependency, not end-user JWT.
+api_router.include_router(worker_router)

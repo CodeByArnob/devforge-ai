@@ -2,7 +2,6 @@ from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from pydantic import ValidationError
 
 from app.schemas.ai import ChatStreamRequest, ModelInfo
 from app.services.openrouter_gateway import OpenRouterError, OpenRouterGateway

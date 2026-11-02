@@ -3,7 +3,8 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import (
-    DateTime, Enum, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint, Uuid,
+    Boolean, DateTime, Enum, ForeignKey, Index, Integer, JSON, String, Text,
+    UniqueConstraint, Uuid,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,6 +25,20 @@ class TaskStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
+class User(Base):
+    __tablename__ = "users"
+    __table_args__ = (UniqueConstraint("email", name="uq_users_email"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(512))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    projects: Mapped[list["Project"]] = relationship(back_populates="owner")
+
+
 class Project(Base):
     __tablename__ = "projects"
 
@@ -33,9 +48,13 @@ class Project(Base):
     workspace_path: Mapped[str] = mapped_column(Text)
     file_count: Mapped[int] = mapped_column(Integer, default=0)
     languages: Mapped[list] = mapped_column(JSON, default=list)
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True
     )
+    owner: Mapped[User | None] = relationship(back_populates="projects")
     tasks: Mapped[list["Task"]] = relationship(back_populates="project")
 
 

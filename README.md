@@ -6,7 +6,8 @@
 - FastAPI API with task and durable activity-event persistence.
 - OpenRouter live model catalogue, explicit free-model filtering and SSE chat proxy.
 - Planning-only agent that stores a proposed plan and pauses at an approval checkpoint.
-- ZIP project import with traversal, symlink, encrypted-entry, entry-count, per-file and total expansion limits.
+- ZIP project import with traversal, symlink, encrypted-entry, duplicate-path, compression-ratio, entry-count, per-file and total expansion limits.
+- Public GitHub repository import through the official GitHub archive endpoint, with redirect-host validation and the same ZIP safety checks.
 - Optional shared API-token protection for all application routes except liveness. Production mode fails closed when no token is configured.
 - Language manifest detection for Flutter/Dart, JS/TS, Python, Kotlin/Java, Go, Rust, PHP, Ruby, .NET, C/C++ and Swift.
 
@@ -21,7 +22,7 @@ uvicorn app.main:app --app-dir backend --reload
 
 Docker startup runs `alembic upgrade head` before Uvicorn. For an existing pre-migration development database, back it up first; the initial migration creates missing tables but does not retrofit every constraint onto pre-existing tables. Review and test a database-specific migration before promoting an existing database.
 
-Project imports are persisted in the `projects` table. Use `GET /api/v1/projects` and `GET /api/v1/projects/{project_id}` to retrieve project metadata. Tasks must reference an existing project.
+Project imports from ZIP and public GitHub repositories are persisted in the `projects` table. Use `GET /api/v1/projects` and `GET /api/v1/projects/{project_id}` to retrieve project metadata. Tasks must reference an existing project.
 
 ## Run locally
 ```bash
@@ -39,7 +40,8 @@ Copy .env.example to .env. Set a long random API_ACCESS_TOKEN before exposing th
 - GET /health — liveness probe.
 - GET /api/v1/ai/models?free_only=true — live free-model catalogue.
 - POST /api/v1/ai/chat/stream — SSE chat; requires X-OpenRouter-Api-Key.
-- POST /api/v1/projects/import/zip — guarded ZIP project import; multipart field file.
+- POST /api/v1/projects/import/zip — guarded ZIP project import; multipart field `file`.
+- POST /api/v1/projects/import/github — import a public repository using `{ "owner": "org", "repository": "repo", "ref": "main" }`.
 - POST /api/v1/tasks — create task.
 - POST /api/v1/tasks/{task_id}/agent/run — generate a plan, not execute code.
 - GET /api/v1/tasks/{task_id}/events — task activity SSE.

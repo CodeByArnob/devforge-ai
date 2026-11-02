@@ -31,45 +31,49 @@ class WorkerQueue:
         now = datetime.now(timezone.utc)
         statement = (
             select(WorkerJob)
-            .join(Task)
             .options(joinedload(WorkerJob.task))
-            .where(
-                Task.status == TaskStatus.awaiting_approval,
-                Task.approval_decision == "approved",
-                WorkerJob.attempt < WorkerJob.max_attempts,
-                or_(
-                    WorkerJob.status == WorkerJobStatus.queued,
-                    (WorkerJob.status == WorkerJobStatus.leased)
-                    & (WorkerJob.lease_expires_at < now),
-                ),
-            )
+            .where(WorkerJob.attempt < WorkerJob.max_attempts)
             .order_by(WorkerJob.created_at.asc())
             .with_for_update(skip_locked=True)
-            .limit(1)
         )
-        job = self.db.scalar(statement)
-        if job is None:
-            return None
-        token = secrets.token_urlsafe(32)
-        lease_seconds = get_settings().worker_lease_seconds
-        job.status = WorkerJobStatus.leased
-        job.attempt += 1
-        job.lease_owner = worker_id
-        job.lease_token_hash = hashlib.sha256(token.encode()).hexdigest()
-        job.lease_expires_at = now + timedelta(seconds=lease_seconds)
-        self._event(
-            job.task_id, "worker.leased", "Worker queue lease issued; execution remains disabled.",
-            {"worker_id": worker_id, "attempt": job.attempt},
-        )
-        self.db.commit()
-        self.db.refresh(job)
-        return {
-            "job_id": job.id,
-            "task_id": job.task_id,
-            "lease_token": token,
-            "lease_expires_at": job.lease_expires_at,
-            "attempt": job.attempt,
-        }
+        for job in self.db.scalars(statement):
+            task = job.task
+            if task.status != TaskStatus.awaiting_approval or task.approval_decision != "approved":
+                continue
+            if job.status == WorkerJobStatus.leased:
+                expires_at = job.lease_expires_at
+                if expires_at is None:
+                    continue
+                if expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+                if expires_at >= now:
+                    continue
+            elif job.status != WorkerJobStatus.queued:
+                continue
+
+            token = secrets.token_urlsafe(32)
+            lease_seconds = get_settings().worker_lease_seconds
+            job.status = WorkerJobStatus.leased
+            job.attempt += 1
+            job.lease_owner = worker_id
+            job.lease_token_hash = hashlib.sha256(token.encode()).hexdigest()
+            job.lease_expires_at = now + timedelta(seconds=lease_seconds)
+            self._event(
+                job.task_id,
+                "worker.leased",
+                "Worker queue lease issued; execution remains disabled.",
+                {"worker_id": worker_id, "attempt": job.attempt},
+            )
+            self.db.commit()
+            self.db.refresh(job)
+            return {
+                "job_id": job.id,
+                "task_id": job.task_id,
+                "lease_token": token,
+                "lease_expires_at": job.lease_expires_at,
+                "attempt": job.attempt,
+            }
+        return None
 
     def heartbeat(self, job_id: UUID, token: str) -> WorkerJob | None:
         job = self._valid_lease(job_id, token)

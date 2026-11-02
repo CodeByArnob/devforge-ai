@@ -11,8 +11,11 @@ class TaskService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, payload: TaskCreate) -> Task:
-        if self.db.get(Project, payload.project_id) is None:
+    def create(self, payload: TaskCreate, owner_id: UUID | None = None) -> Task:
+        statement = select(Project).where(Project.id == payload.project_id)
+        if owner_id is not None:
+            statement = statement.where(Project.owner_id == owner_id)
+        if self.db.scalar(statement) is None:
             raise LookupError("Project not found.")
         task = Task(
             project_id=payload.project_id,
@@ -27,24 +30,33 @@ class TaskService:
         self.db.refresh(task)
         return task
 
-    def get(self, task_id: UUID) -> Task | None:
-        return self.db.get(Task, task_id)
+    def get(self, task_id: UUID, owner_id: UUID | None = None) -> Task | None:
+        statement = select(Task).join(Project).where(Task.id == task_id)
+        if owner_id is not None:
+            statement = statement.where(Project.owner_id == owner_id)
+        return self.db.scalar(statement)
 
-    def list_tasks(self, limit: int = 20) -> list[Task]:
-        statement = select(Task).order_by(Task.created_at.desc()).limit(limit)
+    def list_tasks(self, limit: int = 20, owner_id: UUID | None = None) -> list[Task]:
+        statement = select(Task).join(Project)
+        if owner_id is not None:
+            statement = statement.where(Project.owner_id == owner_id)
+        statement = statement.order_by(Task.created_at.desc()).limit(limit)
         return list(self.db.scalars(statement))
 
-    def events(self, task_id: UUID, after: int = 0) -> list[TaskEvent]:
+    def events(
+        self, task_id: UUID, after: int = 0, owner_id: UUID | None = None
+    ) -> list[TaskEvent]:
         statement = (
-            select(TaskEvent)
+            select(TaskEvent).join(Task).join(Project)
             .where(TaskEvent.task_id == task_id, TaskEvent.sequence > after)
-            .order_by(TaskEvent.sequence.asc())
-            .limit(200)
         )
+        if owner_id is not None:
+            statement = statement.where(Project.owner_id == owner_id)
+        statement = statement.order_by(TaskEvent.sequence.asc()).limit(200)
         return list(self.db.scalars(statement))
 
-    def cancel(self, task_id: UUID) -> Task | None:
-        task = self.get(task_id)
+    def cancel(self, task_id: UUID, owner_id: UUID | None = None) -> Task | None:
+        task = self.get(task_id, owner_id)
         if task is None:
             return None
         if task.status not in {TaskStatus.completed, TaskStatus.failed, TaskStatus.cancelled}:

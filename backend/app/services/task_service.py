@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Project, Task, TaskEvent, TaskStatus
 from app.schemas.task import TaskApprovalRequest, TaskCreate
+from app.services.worker_queue import WorkerQueue
 
 
 class TaskService:
@@ -85,17 +86,15 @@ class TaskService:
             task.id,
             f"task.approval.{payload.decision}",
             (
-                "Plan approved by the project owner; execution remains disabled until "
-                "a sandbox worker is deployed."
+                "Plan approved by the project owner; it is queued for a worker lease. "
+                "No repository code is executed by this API."
                 if payload.decision == "approved"
                 else "Plan rejected by the project owner; task cancelled."
             ),
-            {
-                "decision": payload.decision,
-                "note": payload.note,
-                "execution_started": False,
-            },
+            {"decision": payload.decision, "note": payload.note, "execution_started": False},
         )
+        if payload.decision == "approved":
+            WorkerQueue(self.db).enqueue_approved_task(task)
         self.db.commit()
         self.db.refresh(task)
         return task
@@ -117,10 +116,7 @@ class TaskService:
         ) or 0
         self.db.add(
             TaskEvent(
-                task_id=task_id,
-                sequence=last + 1,
-                event_type=event_type,
-                message=message,
-                payload=payload,
+                task_id=task_id, sequence=last + 1, event_type=event_type,
+                message=message, payload=payload,
             )
         )

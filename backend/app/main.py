@@ -5,20 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import get_settings
-from app.db import models
-from app.db.base import Base
-from app.db.session import engine
-
-# Importing the model module registers its tables with SQLAlchemy metadata.
-_REGISTERED_TASK_MODEL = models.Task
-
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    # Production deployments must replace create_all with versioned Alembic migrations.
-    Base.metadata.create_all(bind=engine)
     yield
 
 

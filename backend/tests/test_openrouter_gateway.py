@@ -38,7 +38,7 @@ def test_stream_uses_request_key_and_forwards_sse():
             return httpx.Response(
                 200,
                 headers={"content-type": "text/event-stream"},
-                content=b'data: {"choices":[{"delta":{"content":"hello"}}]}\\n\\ndata: [DONE]\\n\\n',
+                content=b'data: {"choices":[{"delta":{"content":"hello"}}]}\n\ndata: [DONE]\n\n',
             )
 
         gateway = OpenRouterGateway(transport=httpx.MockTransport(handler))

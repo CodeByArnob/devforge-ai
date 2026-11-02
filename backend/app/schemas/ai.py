@@ -34,3 +34,21 @@ class AgentPlan(BaseModel):
     steps: list[str] = Field(min_length=1, max_length=20)
     risks: list[str] = Field(default_factory=list, max_length=20)
     needs_project_files: bool = True
+
+
+class AgentRoleResult(BaseModel):
+    role: Literal["architect", "implementer", "security", "qa", "reviewer"]
+    summary: str = Field(min_length=1, max_length=4000)
+    findings: list[str] = Field(default_factory=list, max_length=20)
+    blockers: list[str] = Field(default_factory=list, max_length=20)
+    proposed_actions: list[str] = Field(default_factory=list, max_length=20)
+
+
+class AgentTeamPlan(BaseModel):
+    task_id: str
+    model: str
+    status: Literal["awaiting_human_approval"] = "awaiting_human_approval"
+    execution_enabled: bool = False
+    agents: list[AgentRoleResult] = Field(min_length=5, max_length=5)
+    integration_summary: str = Field(min_length=1, max_length=6000)
+    approval_required: bool = True

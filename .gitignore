@@ -1,15 +1,59 @@
+# Python
 __pycache__/
 *.py[cod]
+*$py.class
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
 .venv/
 venv/
+ENV/
+env/
+.coverage
+htmlcov/
+
+# Environment, secrets, and credentials (NEVER UPLOAD SECRETS)
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.jks
+*.keystore
+key.properties
+*.token
+
+# Databases and Local State
 *.db
 *.sqlite*
 data/
 workspace/
 artifacts/
+
+# Flutter & Dart
+client/.dart_tool/
+client/.flutter-plugins
+client/.flutter-plugins-dependencies
+client/.packages
+client/build/
+client/windows/flutter/ephemeral/
+client/android/.gradle/
+client/android/local.properties
+*.apk
+*.aab
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+*.swp
+*~
+
+# Operating System
+.DS_Store
+Thumbs.db

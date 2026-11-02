@@ -1,7 +1,6 @@
 import shutil
 from datetime import datetime
 from pathlib import Path
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
@@ -10,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import CurrentUser
 from app.core.config import get_settings
-from app.db.models import Project, User
+from app.db.models import Project
 from app.db.session import get_db
 from app.services.project_ingestion import ProjectArchiveError, ingest_zip
 from app.services.github_import import GitHubImportError, import_public_repository

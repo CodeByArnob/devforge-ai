@@ -35,3 +35,5 @@ select = ["E4", "E7", "E9", "F"]
 testpaths = ["backend/tests"]
 pythonpath = ["backend"]
 addopts = "-q"
+
+# CI validates the OpenRouter gateway, streaming proxy and agent planning milestone.

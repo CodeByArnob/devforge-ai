@@ -18,11 +18,16 @@ class OpenRouterError(RuntimeError):
 
 
 class OpenRouterGateway:
-    def __init__(self, timeout_seconds: float = 90.0):
+    def __init__(
+        self,
+        timeout_seconds: float = 90.0,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ):
         self.timeout = httpx.Timeout(timeout_seconds, connect=15.0)
+        self.transport = transport
 
     async def list_models(self, free_only: bool = True) -> list[dict[str, Any]]:
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        async with httpx.AsyncClient(timeout=self.timeout, transport=self.transport) as client:
             response = await client.get(f"{OPENROUTER_BASE_URL}/models")
             response.raise_for_status()
         payload = response.json()
@@ -44,7 +49,7 @@ class OpenRouterGateway:
         return sorted(normalized, key=lambda item: str(item["name"]).casefold())
 
     async def open_stream(self, api_key: str, body: dict[str, Any]) -> tuple[httpx.AsyncClient, Any]:
-        client = httpx.AsyncClient(timeout=self.timeout)
+        client = httpx.AsyncClient(timeout=self.timeout, transport=self.transport)
         request = client.build_request(
             "POST",
             f"{OPENROUTER_BASE_URL}/chat/completions",
@@ -61,12 +66,12 @@ class OpenRouterGateway:
             detail = (await response.aread()).decode("utf-8", errors="replace")[:1000]
             await response.aclose()
             await client.aclose()
-            raise OpenRouterError(f"OpenRouter rejected the request ({response.status_code}): {detail}")
+            raise OpenRouterError(
+                f"OpenRouter rejected the request ({response.status_code}): {detail}"
+            )
         return client, response
 
     async def stream_sse(self, response: httpx.Response) -> AsyncIterator[str]:
         async for line in response.aiter_lines():
             if line.startswith("data:"):
                 yield f"{line}\n\n"
-            elif line == "":
-                continue

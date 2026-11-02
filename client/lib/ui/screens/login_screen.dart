@@ -29,6 +29,14 @@ class _LoginScreenState extends State<LoginScreen> {
     _urlController.text = _vault.baseUrl;
   }
 
+  void _selectPresetUrl(String url) {
+    setState(() {
+      _urlController.text = url;
+      _vault.baseUrl = url;
+      _errorMessage = null;
+    });
+  }
+
   Future<void> _submit() async {
     setState(() {
       _isLoading = true;
@@ -51,6 +59,11 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _enterDemo() {
+    _vault.enterDemoMode();
+    widget.onLoginSuccess();
   }
 
   Future<void> _forgotPassword() async {
@@ -84,10 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            constraints: const BoxConstraints(maxWidth: 440),
             child: Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               child: Padding(
                 padding: const EdgeInsets.all(28.0),
                 child: Column(
@@ -97,22 +110,29 @@ class _LoginScreenState extends State<LoginScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.bolt, color: theme.colorScheme.primary, size: 36),
-                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.bolt, color: theme.colorScheme.primary, size: 30),
+                        ),
+                        const SizedBox(width: 12),
                         Text(
                           'DevForge AI',
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _isRegister ? 'Create your platform account' : 'Sign in to access your workspace',
+                      _isRegister ? 'Create your platform account' : 'Sign in to access your autonomous workspace',
                       textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
                     const SizedBox(height: 24),
                     TextField(
@@ -136,31 +156,87 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     ExpansionTile(
-                      title: const Text('Server Configuration', style: TextStyle(fontSize: 13)),
+                      title: const Text('Server Configuration', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      subtitle: Text(
+                        _urlController.text.isEmpty ? 'http://10.0.2.2:8000' : _urlController.text,
+                        style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
+                      ),
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
+                          padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
                           child: TextField(
                             controller: _urlController,
                             decoration: const InputDecoration(
                               labelText: 'API Control Plane URL',
-                              helperText: 'e.g. http://10.0.2.2:8000 for Android or http://localhost:8000',
+                              helperText: 'e.g. http://192.168.110.215:8000 for mobile over Wi-Fi',
                               border: OutlineInputBorder(),
                             ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              ActionChip(
+                                avatar: const Icon(Icons.wifi, size: 14),
+                                label: const Text('PC Wi-Fi (192.168.110.215)'),
+                                onPressed: () => _selectPresetUrl('http://192.168.110.215:8000'),
+                              ),
+                              ActionChip(
+                                avatar: const Icon(Icons.android, size: 14),
+                                label: const Text('Emulator (10.0.2.2)'),
+                                onPressed: () => _selectPresetUrl('http://10.0.2.2:8000'),
+                              ),
+                              ActionChip(
+                                avatar: const Icon(Icons.computer, size: 14),
+                                label: const Text('Localhost (127.0.0.1)'),
+                                onPressed: () => _selectPresetUrl('http://127.0.0.1:8000'),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                     if (_errorMessage != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.shade400),
+                          color: Colors.red.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.red.shade400.withValues(alpha: 0.5)),
                         ),
-                        child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(color: Colors.redAccent, fontSize: 13, height: 1.35),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            OutlinedButton.icon(
+                              onPressed: _enterDemo,
+                              icon: const Icon(Icons.play_circle_outline, size: 18),
+                              label: const Text('Switch to Offline Demo Workspace'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.amberAccent,
+                                side: BorderSide(color: Colors.amberAccent.withValues(alpha: 0.6)),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                     if (_recoveryTokenNotice != null) ...[
@@ -183,11 +259,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       child: _isLoading
                           ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text(_isRegister ? 'Register' : 'Sign In', style: const TextStyle(fontSize: 16)),
+                          : Text(_isRegister ? 'Register & Launch' : 'Sign In', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _enterDemo,
+                      icon: const Icon(Icons.explore_outlined, size: 18),
+                      label: const Text(
+                        'Explore in Offline Demo Mode',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Wrap(
@@ -196,8 +285,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       runSpacing: 4,
                       children: [
                         TextButton(
-                          onPressed: () => setState(() => _isRegister = !_isRegister),
-                          child: Text(_isRegister ? 'Sign In' : 'Create Account'),
+                          onPressed: () => setState(() {
+                            _isRegister = !_isRegister;
+                            _errorMessage = null;
+                          }),
+                          child: Text(_isRegister ? 'Already have an account? Sign In' : 'Create Account'),
                         ),
                         if (!_isRegister)
                           TextButton(

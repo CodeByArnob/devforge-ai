@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     app_name: str = "DevForge AI API"
     api_v1_prefix: str = "/api/v1"
     database_url: str = "sqlite:///./devforge.db"
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8080"]
+    cors_origins: list[str] = ["*"]
     log_level: str = "INFO"
     task_event_poll_interval_seconds: float = 1.0
     api_access_token: str = ""
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     jwt_issuer: str = "devforge-ai"
     jwt_audience: str = "devforge-ai-api"
     jwt_access_token_minutes: int = 30
-    allow_registration: bool = False
+    allow_registration: bool = True
     workspace_root: str = "./workspace"
     worker_shared_secret: str = ""
     worker_lease_seconds: int = 60

@@ -15,6 +15,19 @@ class SecureVault {
   String? _refreshToken;
   String? _openRouterApiKey;
 
+  bool get isDemoMode => _storage['isDemoMode'] == 'true';
+  set isDemoMode(bool value) {
+    _storage['isDemoMode'] = value.toString();
+    _vaultUpdates.add('isDemoMode');
+  }
+
+  void enterDemoMode() {
+    isDemoMode = true;
+    accessToken = 'devforge-demo-session-token';
+    refreshToken = 'devforge-demo-refresh-token';
+    openRouterApiKey = openRouterApiKey ?? 'sk-or-v1-free-router-demo';
+  }
+
   String get baseUrl => _baseUrl;
   set baseUrl(String url) {
     _baseUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;

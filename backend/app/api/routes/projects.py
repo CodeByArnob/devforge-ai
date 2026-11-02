@@ -1,8 +1,9 @@
+import secrets
 import shutil
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -11,8 +12,11 @@ from app.core.auth import CurrentUser
 from app.core.config import get_settings
 from app.db.models import Project
 from app.db.session import get_db
-from app.services.project_ingestion import ProjectArchiveError, ingest_zip
 from app.services.github_import import GitHubImportError, import_public_repository
+from app.services.project_ingestion import ProjectArchiveError, ingest_zip
+from app.services.workspace_snapshot import (
+    WorkspaceSafetyError, create_snapshot, inspect_workspace, read_file_safe,
+)
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -21,12 +25,18 @@ class ProjectImportResponse(BaseModel):
     project_id: str
     file_count: int
     languages: list[dict]
+    source_snapshot_digest: str | None = None
 
 
 class GitHubImportRequest(BaseModel):
     owner: str = Field(min_length=1, max_length=100)
     repository: str = Field(min_length=1, max_length=100)
     ref: str | None = Field(default=None, max_length=200)
+
+
+class ProjectClaimRequest(BaseModel):
+    claim_secret: str = Field(min_length=16, max_length=256)
+    reason: str | None = Field(default=None, max_length=1000)
 
 
 class ProjectRead(BaseModel):
@@ -36,6 +46,7 @@ class ProjectRead(BaseModel):
     source_type: str
     file_count: int
     languages: list[dict]
+    owner_id: str | None = None
     created_at: datetime
 
 
@@ -55,6 +66,13 @@ async def import_zip(
     except ProjectArchiveError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    # Create immutable source snapshot upon initial ingestion
+    snapshots_dir = Path(settings.workspace_root) / ".snapshots"
+    try:
+        _, _, source_digest = create_snapshot(Path(result["workspace_path"]), snapshots_dir)
+    except Exception:
+        source_digest = None
+
     project = Project(
         id=result["project_id"],
         name=Path(file.filename or "Imported project").stem[:255] or "Imported project",
@@ -72,7 +90,10 @@ async def import_zip(
         shutil.rmtree(result["workspace_path"], ignore_errors=True)
         raise
     return ProjectImportResponse(
-        project_id=project.id, file_count=project.file_count, languages=project.languages
+        project_id=project.id,
+        file_count=project.file_count,
+        languages=project.languages,
+        source_snapshot_digest=source_digest,
     )
 
 
@@ -87,6 +108,13 @@ async def import_github_repository(
         )
     except GitHubImportError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    # Create immutable source snapshot upon initial ingestion
+    snapshots_dir = Path(settings.workspace_root) / ".snapshots"
+    try:
+        _, _, source_digest = create_snapshot(Path(result["workspace_path"]), snapshots_dir)
+    except Exception:
+        source_digest = None
 
     project = Project(
         id=result["project_id"],
@@ -105,7 +133,10 @@ async def import_github_repository(
         shutil.rmtree(result["workspace_path"], ignore_errors=True)
         raise
     return ProjectImportResponse(
-        project_id=project.id, file_count=project.file_count, languages=project.languages
+        project_id=project.id,
+        file_count=project.file_count,
+        languages=project.languages,
+        source_snapshot_digest=source_digest,
     )
 
 
@@ -130,3 +161,73 @@ def get_project(project_id: str, user: CurrentUser, db: Session = Depends(get_db
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found.")
     return project
+
+
+@router.post("/{project_id}/claim", response_model=ProjectRead)
+def claim_legacy_project(
+    project_id: str,
+    payload: ProjectClaimRequest,
+    user: CurrentUser,
+    db: Session = Depends(get_db),
+) -> Project:
+    """Verified ownership reassignment for legacy unowned projects."""
+    settings = get_settings()
+    if not settings.legacy_project_claim_secret or len(settings.legacy_project_claim_secret) < 16:
+        raise HTTPException(status_code=503, detail="Legacy project claim is not configured.")
+
+    if not secrets.compare_digest(payload.claim_secret, settings.legacy_project_claim_secret):
+        raise HTTPException(status_code=403, detail="Invalid legacy claim secret.")
+
+    project = db.scalar(select(Project).where(Project.id == project_id).with_for_update())
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    if project.owner_id is not None:
+        raise HTTPException(status_code=409, detail="Project already has a verified owner.")
+
+    project.owner_id = user.id
+    db.commit()
+    db.refresh(project)
+    return project
+
+
+@router.get("/{project_id}/inventory")
+def get_project_inventory(
+    project_id: str,
+    user: CurrentUser,
+    max_depth: int = Query(default=10, ge=1, le=20),
+    limit: int = Query(default=500, ge=1, le=2000),
+    db: Session = Depends(get_db),
+) -> dict:
+    project = db.scalar(
+        select(Project).where(Project.id == project_id, Project.owner_id == user.id)
+    )
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    try:
+        items = inspect_workspace(Path(project.workspace_path), max_depth=max_depth, limit=limit)
+        return {
+            "project_id": project_id,
+            "total_items": len(items),
+            "items": items,
+        }
+    except WorkspaceSafetyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/{project_id}/files/inspect")
+def inspect_project_file(
+    project_id: str,
+    path: str,
+    user: CurrentUser,
+    max_bytes: int = Query(default=64 * 1024, ge=1, le=1024 * 1024),
+    db: Session = Depends(get_db),
+) -> dict:
+    project = db.scalar(
+        select(Project).where(Project.id == project_id, Project.owner_id == user.id)
+    )
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    try:
+        return read_file_safe(Path(project.workspace_path), path, max_bytes=max_bytes)
+    except WorkspaceSafetyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

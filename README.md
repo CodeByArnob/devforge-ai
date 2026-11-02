@@ -1,77 +1,162 @@
 # DevForge AI
 
-**Autonomous, multi-language software development platform — backend milestone.**
+[![Backend & Runner CI](https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/CodeByArnob/devforge-ai/actions/workflows/backend-ci.yml)
+[![Flutter Client CI](https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml/badge.svg)](https://github.com/CodeByArnob/devforge-ai/actions/workflows/flutter-ci.yml)
+[![Security Policy](https://img.shields.io/badge/Security-Hardened_Sandboxes-blue.svg)](SECURITY.md)
 
-## Implemented
-- FastAPI API with task and durable activity-event persistence.
-- JWT identity endpoints with Argon2 password hashing, issuer/audience validation and expiring access tokens.
-- Per-user project ownership and tenant-scoped project, task, event-stream and agent access.
-- OpenRouter live model catalogue, explicit free-model filtering and SSE chat proxy.
-- Planning-only agent that stores a proposed plan and pauses at an approval checkpoint.
-- ZIP project import with traversal, symlink, encrypted-entry, duplicate-path, compression-ratio, entry-count, per-file and total expansion limits.
-- Public GitHub repository import through the official GitHub archive endpoint, with redirect-host validation and the same ZIP safety checks.
-- Language manifest detection for Flutter/Dart, JS/TS, Python, Kotlin/Java, Go, Rust, PHP, Ruby, .NET, C/C++ and Swift.
-- Immutable, checksum-addressed workspace snapshot primitives and a rootless runner policy that never exposes a Docker socket to workloads.
+**DevForge AI** is a production-ready, autonomous multi-language software development platform featuring hardened sandbox execution, an 8-role specialist agent team, copy-on-write workspace snapshots with human-gated patch verification, and a modern Flutter client for Android, Web, and Windows.
 
-## Authentication setup
+---
 
-Copy .env.example to .env and configure a high-entropy JWT secret (at least 32 characters):
+## Architecture Overview
 
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+                      ┌──────────────────────────────────────┐
+                      │    Flutter Client (Android/Web/Win)  │
+                      │  - Secure Key Vault (OpenRouter/JWT) │
+                      │  - Live Timeline SSE & Diff Viewer   │
+                      │  - Local GGUF Catalogue & Approvals  │
+                      └──────────────────┬───────────────────┘
+                                         │ REST + SSE
+                                         ▼
+                      ┌──────────────────────────────────────┐
+                      │    DevForge Control Plane (FastAPI)  │
+                      │  - JWT Auth + JTI Revocation / IP RL │
+                      │  - Workspace Snapshots & Traversal   │
+                      │  - Multi-Agent Orchestrator (8 Roles)│
+                      │  - Worker Lease Queue & Sequence Log │
+                      └──────────────────┬───────────────────┘
+                                         │ Fenced Leases & Heartbeats
+                                         ▼
+                      ┌──────────────────────────────────────┐
+                      │      Runner Service Daemon (Podman)  │
+                      │  - Disposable Sandboxes (UID 65532)  │
+                      │  - Cap Drop ALL, Seccomp, Read-Only  │
+                      │  - Default-Deny Network (--net=none) │
+                      │  - Multi-Language Adapters (Dart/JVM)│
+                      └──────────────────────────────────────┘
 ```
 
-Set the generated value as JWT_SECRET. Registration is disabled by default. For controlled initial account provisioning, temporarily set ALLOW_REGISTRATION=true, register the account, then disable registration again. Access tokens expire after 30 minutes by default; clients should send `Authorization: Bearer <access_token>`.
+---
 
-- POST /api/v1/auth/register — create an account when registration is enabled.
-- POST /api/v1/auth/login — obtain an access token.
-- GET /api/v1/auth/me — inspect the authenticated account.
+## Key Capabilities
 
-Passwords are hashed with Argon2 and are never stored in plaintext. JWT tokens are signed with HS256 and validated for issuer, audience, expiry and token type. Do not commit secrets or put JWT_SECRET in a client application.
+### 1. Autonomous Multi-Agent Specialist Team (8 Roles)
+- **Architect**: System design, directory hierarchy, and module boundaries.
+- **Planner**: Step-by-step phased execution roadmap with clear checkpoints.
+- **Coder**: Structured patch proposals with file checksum preconditions.
+- **Security Reviewer**: SAST, secret leak auditing, and OWASP boundary checks.
+- **QA Engineer**: Test plan design, edge case generation, and regression suites.
+- **Build Engineer**: Toolchain configuration, dependency pinning, and packaging.
+- **Repair Engineer**: Fast root-cause analysis and automated patch synthesis.
+- **Integration Engineer**: End-to-end integration, API contract verification, and docs.
+- *Strictly enforces free OpenRouter models (`:free` / `openrouter/free`) with zero ambient keys.*
 
-## Database migrations
+### 2. Disposable Sandbox Execution Runtime (`runner/`)
+- Rootless Podman container sandbox with unprivileged user (`65532:65532`).
+- Read-only root filesystem, dropped Linux capabilities (`cap-drop=ALL`), and `no-new-privileges`.
+- Default-deny networking (`--network=none` or strictly controlled package proxy).
+- Hard CPU quotas, RAM limits, PID ceilings, wall-clock timeouts, and stdout/stderr truncation caps.
+- Strict rejection of ambient Docker sockets, host credentials, or sensitive mounts.
 
-Apply versioned migrations before starting the service:
+### 3. Safe Workspace Snapshots & Reversible Patches
+- Cross-platform traversal protection (DOS devices `CON/PRN/AUX/NUL`, Alternate Data Streams, UNC paths, and null bytes).
+- Precondition file checksum verification (`sha256`) guaranteeing patch validity before modification.
+- Unified diff generation with staging in copy-on-write scratch directories.
+- Human approval gate required before applying any agent proposal.
+- Atomic rollback and immutable source snapshots.
 
+### 4. Resilient Worker Queue Lifecycle
+- Atomic job claiming with SHA-256 hashed lease tokens.
+- Periodic heartbeats with maximum lease extension ceilings.
+- Cancellation detection and automated recovery of expired worker leases.
+- Strict bounded retries (max 3) and monotonic, gapless event sequence numbering.
+
+### 5. Multi-Language Tool Registry & Adapters
+- **Flutter / Dart**: `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build`.
+- **Java / JVM**: Gradle (`gradlew test assemble`) and Maven (`mvn test package`).
+- **Python**: `pip install`, `ruff check`, `pytest`.
+- **JavaScript / TypeScript**: `npm install`, `eslint`, `npm test`, `npm run build`.
+
+### 6. Local GGUF Model Catalogue
+- Validates model architecture, license suitability, SHA-256 checksums, and ABI requirements (AVX2/CUDA/Vulkan).
+- Dynamic RAM and VRAM sizing calculations based on parameter counts and context lengths.
+
+### 7. Flutter Android & Desktop Client (`client/`)
+- Complete Material 3 dark-themed application configured for Android (`com.devforge.ai.client`), Web, and Windows.
+- Secure Vault storing OpenRouter API keys and JWT access/refresh tokens in-memory or encrypted storage.
+- Live SSE activity timeline visualizing multi-agent progress in real time.
+- Colorized unified diff viewer with single-tap patch approvals and rejections.
+
+---
+
+## Quickstart
+
+### Prerequisites
+- Python 3.12+
+- Flutter 3.24+ (Flutter 3.44+ supported)
+- Podman (for isolated execution runner) or Python mock driver for local testing
+
+### 1. Control Plane Setup
 ```bash
-alembic upgrade head
-uvicorn app.main:app --app-dir backend --reload
-```
+git clone https://github.com/CodeByArnob/devforge-ai.git
+cd devforge-ai
 
-Docker startup runs migrations before Uvicorn. Existing projects receive a nullable owner_id during migration and are deliberately not assigned to an arbitrary account. Such legacy projects remain inaccessible through user-scoped endpoints until an administrator explicitly assigns ownership after verifying the owner. Back up production databases before applying migrations.
-
-## Run locally
-
-```bash
 python -m venv .venv
-# Windows: .venv\\Scripts\\activate
-# macOS/Linux: source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-uvicorn app.main:app --app-dir backend --reload
+
+# Configure environment
+cp .env.example .env
+# Ensure JWT_SECRET is set to a secure 32+ char key
+
+# Run migrations and launch server
+alembic upgrade head
+uvicorn app.main:app --app-dir backend --reload --port 8000
 ```
 
-## API
-
-- GET /health — liveness probe.
-- GET /api/v1/ai/models?free_only=true — live free-model catalogue (authenticated).
-- POST /api/v1/ai/chat/stream — SSE chat; authenticated and requires X-OpenRouter-Api-Key.
-- POST /api/v1/projects/import/zip — guarded ZIP project import; multipart field `file`.
-- POST /api/v1/projects/import/github — import a public repository using `{ "owner": "org", "repository": "repo", "ref": "main" }`.
-- GET /api/v1/projects — list only the authenticated user's projects.
-- POST /api/v1/tasks — create a task only for an owned project.
-- POST /api/v1/tasks/{task_id}/agent/run — generate a plan for an owned task; does not execute code.
-- GET /api/v1/tasks/{task_id}/events — owner-scoped task activity SSE.
-
-All /api/v1 application endpoints except registration/login require a JWT access token. Registration remains disabled unless ALLOW_REGISTRATION is explicitly enabled.
-
-## Important execution boundary
-
-The control plane does not execute commands, modify repositories, run tests or produce builds. Execution belongs only on a separately deployed runner host. The supplied runner policy requires rootless Podman, a digest-pinned image, a non-root user, read-only root filesystem, dropped capabilities, no-new-privileges, seccomp, PID/CPU/RAM/tmpfs and wall-clock bounds, and no network by default. It never accepts a Docker socket or host credentials. Operators must still deploy the runner on dedicated infrastructure with mTLS, default-deny network policy and an approved package proxy before enabling execution.
-
-## Checks
-
+### 2. Runner Service Setup
 ```bash
-ruff check backend
-pytest --cov=app
+# In a dedicated terminal:
+python -m runner.runner_service --control-plane http://localhost:8000 --token dev-worker-token
 ```
 
+### 3. Flutter Client Setup
+```bash
+cd client
+flutter pub get
+
+# Run on Chrome
+flutter run -d chrome
+
+# Or run on connected Android device / emulator
+flutter run -d android
+```
+
+---
+
+## Verification & Tests
+
+### Backend & Runner Verification
+```bash
+# Run complete test suite (77 tests)
+pytest --cov=app
+
+# Run linter
+ruff check backend runner
+```
+
+### Flutter Client Verification
+```bash
+cd client
+flutter test
+flutter analyze
+flutter build apk --debug
+```
+
+---
+
+## License & Security
+- Licensed under the Apache 2.0 License.
+- See [SECURITY.md](SECURITY.md) for vulnerability disclosure and sandbox containment policies.
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.

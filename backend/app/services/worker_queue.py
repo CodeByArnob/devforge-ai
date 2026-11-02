@@ -83,8 +83,6 @@ class WorkerQueue:
             return None
         now = datetime.now(timezone.utc)
         settings = get_settings()
-        # Absolute deadline is anchored at claim time: a hostile or stuck runner
-        # cannot renew a lease forever.
         started_at = job.lease_started_at or now
         if started_at.tzinfo is None:
             started_at = started_at.replace(tzinfo=timezone.utc)
@@ -109,6 +107,10 @@ class WorkerQueue:
         job.lease_expires_at = None
         retry = job.attempt < job.max_attempts
         job.status = WorkerJobStatus.queued if retry else WorkerJobStatus.failed
+        if not retry:
+            task = self.db.get(Task, job.task_id)
+            if task is not None:
+                task.status = TaskStatus.failed
         self._event(
             job.task_id,
             "worker.failed",
@@ -167,6 +169,26 @@ class WorkerQueue:
         self.db.refresh(job)
         return job
 
+    def get_details(self, job_id: UUID) -> dict | None:
+        job = self.db.scalar(
+            select(WorkerJob)
+            .options(joinedload(WorkerJob.task).joinedload(Task.project))
+            .where(WorkerJob.id == job_id)
+        )
+        if job is None or job.task is None or job.task.project is None:
+            return None
+        return {
+            "job_id": job.id,
+            "task_id": job.task_id,
+            "project_id": job.task.project_id,
+            "instruction": job.task.instruction,
+            "workspace_path": job.task.project.workspace_path,
+            "languages": job.task.project.languages,
+            "attempt": job.attempt,
+            "status": job.status.value,
+            "cancellation_requested": job.cancellation_requested_at is not None,
+        }
+
     def _valid_lease(self, job_id: UUID, token: str) -> WorkerJob | None:
         job = self.db.scalar(
             select(WorkerJob).where(
@@ -196,4 +218,3 @@ class WorkerQueue:
             task_id=task_id, sequence=sequence, event_type=event_type,
             message=message, payload=payload,
         ))
-

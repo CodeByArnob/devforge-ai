@@ -1,11 +1,12 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 import httpx
 from sqlalchemy.orm import Session
 
 from app.db.models import Task, TaskStatus
-from app.schemas.ai import AgentTeamPlan
-from app.services.multi_agent_orchestrator import MultiAgentOrchestrator
+from app.schemas.ai import AgentRole, AgentTeamPlan
+from app.services.multi_agent_orchestrator import DEFAULT_PLANNING_ROLES, MultiAgentOrchestrator
 from app.services.openrouter_gateway import OpenRouterError
 from app.services.task_service import TaskService
 
@@ -28,6 +29,7 @@ class AgentRuntime:
         api_key: str,
         model: str | None,
         owner_id: UUID | None = None,
+        roles: Sequence[AgentRole | str] = DEFAULT_PLANNING_ROLES,
     ) -> tuple[Task, AgentTeamPlan]:
         task = self.tasks.get(task_id, owner_id=owner_id)
         if task is None:
@@ -37,15 +39,16 @@ class AgentRuntime:
         selected_model = model or task.selected_model or "openrouter/free"
         self.orchestrator.validate_model(selected_model)
 
+        selected_roles = list(roles) if roles else list(DEFAULT_PLANNING_ROLES)
         task.selected_model = selected_model
         task.status = TaskStatus.planning
         self.tasks._append_event(
             task.id,
             "agent.team.started",
-            "Four specialist agents are starting independent reviews.",
+            f"{len(selected_roles)} specialist agents are starting independent reviews.",
             {
                 "model": selected_model,
-                "agents": ["architect", "planner", "security_reviewer", "qa_engineer"],
+                "agents": selected_roles,
             },
         )
         self.db.commit()
@@ -55,6 +58,7 @@ class AgentRuntime:
                 api_key=api_key,
                 model=selected_model,
                 instruction=task.instruction,
+                roles=selected_roles,
             )
         except (OpenRouterError, ValueError) as exc:
             task.status = TaskStatus.failed
@@ -81,7 +85,7 @@ class AgentRuntime:
         self.tasks._append_event(
             task.id,
             "agent.team.plan_ready",
-            "Four-agent plan is ready. Human approval is required; no code was changed or executed.",
+            f"{len(selected_roles)}-agent plan is ready. Human approval is required; no code was changed or executed.",
             {
                 "team_plan": team_plan.model_dump(),
                 "execution_enabled": False,

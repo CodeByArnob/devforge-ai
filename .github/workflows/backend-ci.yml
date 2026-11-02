@@ -1,10 +1,10 @@
-name: Backend CI
+name: Backend & Runner CI
 on:
   push:
     branches: [main]
-    paths: ["backend/**", "infra/**", ".github/workflows/backend-ci.yml", "pyproject.toml"]
+    paths: ["backend/**", "runner/**", "infra/**", ".github/workflows/backend-ci.yml", "pyproject.toml"]
   pull_request:
-    paths: ["backend/**", "infra/**", ".github/workflows/backend-ci.yml", "pyproject.toml"]
+    paths: ["backend/**", "runner/**", "infra/**", ".github/workflows/backend-ci.yml", "pyproject.toml"]
 permissions:
   contents: read
 jobs:
@@ -21,7 +21,7 @@ jobs:
       - run: alembic upgrade head
         env:
           DATABASE_URL: sqlite:////tmp/devforge-migration-test.db
-      - run: ruff check backend
+      - run: ruff check backend runner
       - run: pytest --cov=app --cov-report=term-missing
         env:
-          PYTHONPATH: backend
+          PYTHONPATH: backend:.

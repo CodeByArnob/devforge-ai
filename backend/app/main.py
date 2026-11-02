@@ -24,7 +24,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.2.0",
+    version="0.3.0",
     summary="API foundation for a secure, multi-language autonomous development platform.",
     docs_url="/docs" if settings.app_env != "production" else None,
     redoc_url=None,
@@ -40,6 +40,7 @@ app.add_middleware(
         "Content-Type",
         "Last-Event-ID",
         "X-OpenRouter-Api-Key",
+        "X-DevForge-Token",
     ],
 )
 app.include_router(api_router)

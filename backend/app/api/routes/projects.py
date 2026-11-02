@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,7 @@ from app.core.config import get_settings
 from app.db.models import Project
 from app.db.session import get_db
 from app.services.project_ingestion import ProjectArchiveError, ingest_zip
+from app.services.github_import import GitHubImportError, import_public_repository
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -19,6 +20,12 @@ class ProjectImportResponse(BaseModel):
     project_id: str
     file_count: int
     languages: list[dict]
+
+
+class GitHubImportRequest(BaseModel):
+    owner: str = Field(min_length=1, max_length=100)
+    repository: str = Field(min_length=1, max_length=100)
+    ref: str | None = Field(default=None, max_length=200)
 
 
 class ProjectRead(BaseModel):
@@ -52,6 +59,41 @@ async def import_zip(
         id=result["project_id"],
         name=Path(file.filename or "Imported project").stem[:255] or "Imported project",
         source_type="zip",
+        workspace_path=result["workspace_path"],
+        file_count=result["file_count"],
+        languages=result["languages"],
+    )
+    try:
+        db.add(project)
+        db.commit()
+    except Exception:
+        db.rollback()
+        shutil.rmtree(result["workspace_path"], ignore_errors=True)
+        raise
+    return ProjectImportResponse(
+        project_id=project.id,
+        file_count=project.file_count,
+        languages=project.languages,
+    )
+
+
+
+@router.post("/import/github", response_model=ProjectImportResponse, status_code=201)
+async def import_github_repository(
+    payload: GitHubImportRequest, db: Session = Depends(get_db)
+) -> ProjectImportResponse:
+    settings = get_settings()
+    try:
+        result = await import_public_repository(
+            payload.owner, payload.repository, Path(settings.workspace_root), payload.ref
+        )
+    except GitHubImportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    project = Project(
+        id=result["project_id"],
+        name=f"{payload.owner}/{payload.repository}"[:255],
+        source_type="github",
         workspace_path=result["workspace_path"],
         file_count=result["file_count"],
         languages=result["languages"],

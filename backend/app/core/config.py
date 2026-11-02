@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8080"]
     log_level: str = "INFO"
     task_event_poll_interval_seconds: float = 1.0
+    api_access_token: str = ""
+    workspace_root: str = "./workspace"
 
     @field_validator("task_event_poll_interval_seconds")
     @classmethod

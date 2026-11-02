@@ -41,20 +41,40 @@ class _DevForgeAppState extends State<DevForgeApp> {
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        colorScheme: ColorScheme.dark(
-          primary: const Color(0xFF4F80E2),
-          secondary: const Color(0xFF26C6DA),
-          surface: const Color(0xFF1E2024),
-          error: Colors.red.shade400,
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF5A77F6),
+          secondary: Color(0xFF34D399),
+          surface: Color(0xFF121A29),
+          onSurface: Colors.white,
+          error: Color(0xFFEF4444),
         ),
-        scaffoldBackgroundColor: const Color(0xFF121316),
+        scaffoldBackgroundColor: const Color(0xFF0B0E14),
         cardTheme: CardThemeData(
-          color: const Color(0xFF1E2024),
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: const Color(0xFF121A29),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF1E293B), width: 1),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: const Color(0xFF0A0D15),
+          indicatorColor: const Color(0xFF25314C),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const IconThemeData(color: Colors.white);
+            }
+            return const IconThemeData(color: Color(0xFF94A3B8));
+          }),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11);
+            }
+            return const TextStyle(color: Color(0xFF94A3B8), fontWeight: FontWeight.normal, fontSize: 11);
+          }),
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1A1C20),
+          backgroundColor: Color(0xFF0B0E14),
           elevation: 0,
           centerTitle: false,
         ),

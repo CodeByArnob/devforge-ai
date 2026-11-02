@@ -91,20 +91,39 @@ The platform is designed around three core principles:
 
 ## Application Showcase
 
-<p align="center">
-  <b>Autonomous Agent Workspace & Live Timeline</b><br/>
-  <img src="docs/screenshots/01_agent_timeline_chat.png" alt="DevForge Agent Workspace" width="100%" />
-</p>
-
-<p align="center">
-  <b>Human-in-the-Loop Unified Diff Viewer & Precondition Validation</b><br/>
-  <img src="docs/screenshots/02_diff_viewer_approval.png" alt="Unified Diff Viewer" width="100%" />
-</p>
-
-<p align="center">
-  <b>Local Open-Source Model Catalogue & Capacity Sizing</b><br/>
-  <img src="docs/screenshots/03_local_models_catalogue.png" alt="Local GGUF Models" width="100%" />
-</p>
+<table align="center" width="100%">
+  <tr>
+    <td align="center" width="50%" valign="top">
+      <b>Home Workspace & Action Hub</b><br/>
+      <sub>On-Device Workspace, Quick-Action Grid & Offline Qwen Manager</sub><br/><br/>
+      <img src="docs/screenshots/01_home_workspace.jpg" alt="DevForge Home Workspace" width="100%" />
+    </td>
+    <td align="center" width="50%" valign="top">
+      <b>Projects & GitHub App Connection</b><br/>
+      <sub>Device Flow Authorization & Repository Inventory</sub><br/><br/>
+      <img src="docs/screenshots/02_projects_screen.jpg" alt="DevForge Projects" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%" valign="top">
+      <b>AI Studio & Multi-Agent Planning</b><br/>
+      <sub>Multi-Provider Agent, Prompt Synthesis & Unified Diff Approvals</sub><br/><br/>
+      <img src="docs/screenshots/03_ai_studio_screen.jpg" alt="DevForge AI Studio" width="100%" />
+    </td>
+    <td align="center" width="50%" valign="top">
+      <b>Offline-Ready Code Editor</b><br/>
+      <sub>Multi-Language Scratchpad, Local Persistence & Clean Developer UI</sub><br/><br/>
+      <img src="docs/screenshots/04_code_editor_screen.jpg" alt="DevForge Code Editor" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2" valign="top">
+      <b>Build Center & CI/CD Cloud Dispatch</b><br/>
+      <sub>GitHub Actions Dispatch, Production APK / AAB / Web Artifacts</sub><br/><br/>
+      <img src="docs/screenshots/05_build_center_screen.jpg" alt="DevForge Build Center" width="50%" />
+    </td>
+  </tr>
+</table>
 
 ---
 

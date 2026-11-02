@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:client/core/models/models.dart';
 import 'package:client/core/services/secure_vault.dart';
 import 'package:client/main.dart';
+import 'package:client/ui/screens/home_screen.dart';
 import 'package:client/ui/screens/login_screen.dart';
 
 void main() {
@@ -85,5 +86,22 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.text('Sign In'), findsOneWidget);
     expect(find.byType(TextField), findsNWidgets(2)); // Email & Password
+  });
+
+  testWidgets('HomeScreen renders 5-tab developer navigation bar', (WidgetTester tester) async {
+    final vault = SecureVault();
+    vault.enterDemoMode();
+
+    await tester.pumpWidget(MaterialApp(
+      home: HomeScreen(onLogout: () {}),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Build something\nremarkable.'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Projects'), findsWidgets);
+    expect(find.text('AI Studio'), findsWidgets);
+    expect(find.text('Editor'), findsOneWidget);
+    expect(find.text('Builds'), findsOneWidget);
   });
 }

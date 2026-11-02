@@ -67,6 +67,9 @@ class Task(Base):
     instruction: Mapped[str] = mapped_column(Text)
     status: Mapped[TaskStatus] = mapped_column(Enum(TaskStatus), default=TaskStatus.queued, index=True)
     selected_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    approval_decision: Mapped[str] = mapped_column(String(16), default="not_required")
+    approval_note: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    approval_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

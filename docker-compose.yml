@@ -6,8 +6,12 @@ services:
     environment:
       APP_ENV: development
       DATABASE_URL: postgresql+psycopg://devforge:devforge_local_only@db:5432/devforge
+      API_ACCESS_TOKEN: ${API_ACCESS_TOKEN:?Set API_ACCESS_TOKEN in .env}
+      WORKSPACE_ROOT: /srv/devforge/workspace
       CORS_ORIGINS: '["http://localhost:3000","http://localhost:8080"]'
     ports: ["8000:8000"]
+    volumes:
+      - ./workspace:/srv/devforge/workspace
     depends_on:
       db:
         condition: service_healthy

@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     worker_shared_secret: str = ""
     worker_lease_seconds: int = 60
     worker_max_lease_seconds: int = 300
+    legacy_project_claim_secret: str = "devforge-legacy-claim-secret-2026"
+    github_client_id: str = ""
+    github_client_secret: str = ""
 
     @field_validator("task_event_poll_interval_seconds")
     @classmethod

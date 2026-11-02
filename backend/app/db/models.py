@@ -25,6 +25,14 @@ class TaskStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
+class WorkerJobStatus(str, enum.Enum):
+    queued = "queued"
+    leased = "leased"
+    succeeded = "succeeded"
+    failed = "failed"
+    cancelled = "cancelled"
+
+
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (UniqueConstraint("email", name="uq_users_email"),)
@@ -81,6 +89,9 @@ class Task(Base):
     events: Mapped[list["TaskEvent"]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
+    worker_job: Mapped["WorkerJob | None"] = relationship(
+        back_populates="task", cascade="all, delete-orphan", uselist=False
+    )
 
 
 class TaskEvent(Base):
@@ -101,3 +112,33 @@ class TaskEvent(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     task: Mapped[Task] = relationship(back_populates="events")
+
+
+class WorkerJob(Base):
+    __tablename__ = "worker_jobs"
+    __table_args__ = (
+        UniqueConstraint("task_id", name="uq_worker_jobs_task_id"),
+        Index("ix_worker_jobs_claim", "status", "lease_expires_at", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    task_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[WorkerJobStatus] = mapped_column(
+        Enum(WorkerJobStatus), default=WorkerJobStatus.queued, nullable=False
+    )
+    attempt: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    lease_owner: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    lease_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    task: Mapped[Task] = relationship(back_populates="worker_job")

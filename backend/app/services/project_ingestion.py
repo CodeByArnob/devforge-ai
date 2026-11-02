@@ -27,9 +27,9 @@ class ProjectArchiveError(ValueError):
 
 
 def _safe_relative_path(name: str) -> Path:
-    if not name or "\\x00" in name or name.startswith(("/", "\\\\")):
+    if not name or "\x00" in name or name.startswith(("/", "\\")):
         raise ProjectArchiveError("Archive contains an unsafe file path.")
-    normalized = name.replace("\\\\", "/")
+    normalized = name.replace("\\", "/")
     pure = PurePosixPath(normalized.rstrip("/"))
     if pure.is_absolute() or not pure.parts or len(pure.parts) > MAX_PATH_DEPTH:
         raise ProjectArchiveError("Archive contains an unsafe file path.")
@@ -43,7 +43,6 @@ def _safe_relative_path(name: str) -> Path:
         ):
             raise ProjectArchiveError("Archive contains an unsafe file path.")
     return Path(*pure.parts)
-
 
 def _entry_kind(info: zipfile.ZipInfo) -> str:
     mode = info.external_attr >> 16

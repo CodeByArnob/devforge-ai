@@ -28,3 +28,12 @@
 - [ ] Local GGUF catalogue with license, checksum, ABI and RAM validation
 
 **Production status:** This repository is a backend milestone, not yet a production-ready autonomous coding product. It must not execute untrusted code until isolated workers, user-level authorization, quotas, migration management and operational monitoring are implemented.
+
+## Database and project persistence milestone
+- [x] Persist imported project metadata and expose project list/detail endpoints.
+- [x] Enforce task-to-project references at the service layer and relational schema level.
+- [x] Add Alembic migration environment and initial schema revision.
+- [x] Remove automatic `Base.metadata.create_all()` from API startup.
+- [x] Run migrations before the single API container starts.
+- [ ] Add multi-user identity, project ownership, and tenant-scoped authorization before public deployment.
+- [ ] Add migration coverage for upgrades from every supported legacy schema.

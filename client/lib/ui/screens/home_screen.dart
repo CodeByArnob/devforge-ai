@@ -80,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
       BuildsScreen(
         targetProjectName: _buildTargetProject,
       ),
+      const NativeWorkspaceScreen(),
     ];
 
     return Scaffold(
@@ -114,6 +115,10 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(
             icon: Icon(Icons.rocket_launch_rounded, size: 22),
             label: 'Builds',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.terminal_rounded, size: 22),
+            label: 'Device',
           ),
         ],
       ),

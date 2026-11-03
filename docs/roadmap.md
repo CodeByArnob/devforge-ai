@@ -33,3 +33,18 @@
 - [ ] Flutter chat workspace, secure key vault and live activity timeline
 - [ ] Project explorer, diff viewer, approvals and artifact viewer
 - [ ] Local GGUF catalogue with license, checksum, ABI and RAM validation
+
+## Phase 5 - Mobile engineering workspace (new)
+- [ ] Baseline Android/Flutter compatibility and release-signing audit
+- [ ] Responsive mobile IDE shell and project-scoped navigation
+- [ ] Typed Flutter-to-Kotlin runtime interface
+- [ ] Android app-private workspace and Storage Access Framework integration
+- [ ] ARM64 Linux userspace evaluation and verified runtime bundle installer
+- [ ] Process supervisor, structured argv execution, output streaming and cancellation
+- [ ] Loopback-only web preview with WebView origin restrictions
+- [ ] Explicit local/remote execution backend selection and capability reporting
+- [ ] GitHub clone/branch/commit/push/PR workflow with explicit write confirmation
+- [ ] Remote build dispatch, logs, checksums and artifact retrieval
+- [ ] Security regression suite and reproducible release verification
+
+Implementation contract: [Mobile Engineering Workspace Blueprint](mobile-engineering-workspace.md). PRoot is a userspace compatibility layer, not a hardened security boundary; untrusted remote builds remain on the dedicated rootless Podman runner.

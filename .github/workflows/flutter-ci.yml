@@ -25,6 +25,17 @@ jobs:
       - name: Run widget & unit tests
         run: flutter test
         working-directory: client
-      - name: Compile Android debug APK
-        run: flutter build apk --debug
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install pinned Android NDK
+        run: sdkmanager --install "ndk;27.0.12077973"
+      - name: Build release APK
+        run: flutter build apk --release
         working-directory: client
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: devforge-ai-android-release-apk
+          path: client/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14

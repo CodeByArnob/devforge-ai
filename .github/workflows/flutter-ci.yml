@@ -25,3 +25,6 @@ jobs:
       - name: Run widget & unit tests
         run: flutter test
         working-directory: client
+      - name: Compile Android debug APK
+        run: flutter build apk --debug
+        working-directory: client

@@ -115,18 +115,27 @@ class ApiService {
     return headers;
   }
 
-  /// Sends a real chat-completion request to the selected OpenAI-compatible provider.
-  /// The base URL is provider-specific and is never confused with the DevForge backend URL.
+
+  /// Calls the selected OpenAI-compatible provider. This is chat only; it does
+  /// not claim to run repository tools or the DevForge agent orchestration.
   Future<String> createChatCompletion({
     required String model,
     required List<Map<String, String>> messages,
   }) async {
     final apiKey = vault.openRouterApiKey?.trim();
     if (apiKey == null || apiKey.isEmpty || apiKey == 'sk-or-v1-free-router-demo') {
-      throw ApiException(401, 'Add your provider API key in AI & Engine Settings before chatting.');
+      throw ApiException(401, 'Add a valid provider API key in AI Studio settings.');
     }
 
-    final base = vault.providerBaseUrl.trim().replaceAll(RegExp(r'/+  Future<UserModel> login(String email, String password) async {
+    final configuredBase = vault.providerBaseUrl.trim();
+    final baseUri = Uri.tryParse(configuredBase);
+    if (baseUri == null ||
+        !baseUri.hasAuthority ||
+        (baseUri.scheme != 'https' && baseUri.scheme != 'http')) {
+      throw ApiException(400, 'Provider API Base URL must be a valid HTTP(S) URL.');
+    }
+    final endpoint = Uri.parse('${configuredBase.replaceFirst(RegExp(r'/+
+  Future<UserModel> login(String email, String password) async {
     if (vault.isDemoMode) {
       vault.enterDemoMode();
       return _demoUser;
@@ -649,66 +658,58 @@ class ApiService {
     throw ApiException(res.statusCode, err['detail'] ?? 'GGUF validation failed');
   }
 }
-), '');
-    if (base.isEmpty) {
-      throw ApiException(400, 'AI provider Base URL is missing. Select a provider to fill it automatically.');
-    }
+), '')}/chat/completions');
 
-    final uri = Uri.tryParse('$base/chat/completions');
-    if (uri == null || !uri.hasScheme || uri.host.isEmpty ||
-        (uri.scheme != 'https' && uri.scheme != 'http')) {
-      throw ApiException(400, 'Invalid provider Base URL. Use a valid HTTPS endpoint.');
-    }
-
-    final headers = <String, String>{
-      'Authorization': 'Bearer $apiKey',
-      'Content-Type': 'application/json',
-    };
-    if (base.contains('openrouter.ai')) {
-      headers['HTTP-Referer'] = 'https://github.com/CodeByArnob/devforge-ai';
-      headers['X-Title'] = 'DevForge AI';
-    }
-
-    final response = await _client.post(
-      uri,
-      headers: headers,
-      body: jsonEncode({
-        'model': model,
-        'messages': messages,
-        'temperature': 0.7,
-        'max_tokens': 2048,
-        'stream': false,
-      }),
-    ).timeout(const Duration(seconds: 90));
-
-    Map<String, dynamic> payload;
     try {
-      payload = jsonDecode(response.body) as Map<String, dynamic>;
-    } catch (_) {
-      throw ApiException(response.statusCode, 'Provider returned an unreadable response (HTTP ${response.statusCode}).');
-    }
+      final response = await _client.post(
+        endpoint,
+        headers: <String, String>{
+          'Authorization': 'Bearer $apiKey',
+          'Content-Type': 'application/json',
+          if (baseUri.host == 'openrouter.ai') ...{
+            'HTTP-Referer': 'https://github.com/CodeByArnob/devforge-ai',
+            'X-Title': 'DevForge AI',
+          },
+        },
+        body: jsonEncode({
+          'model': model,
+          'messages': messages,
+          'stream': false,
+        }),
+      ).timeout(const Duration(seconds: 90));
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final error = payload['error'];
-      final detail = error is Map ? error['message']?.toString() : error?.toString();
-      throw ApiException(response.statusCode, detail ?? 'AI provider request failed (HTTP ${response.statusCode}).');
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final detail = decoded is Map
+            ? (decoded['error'] is Map
+                ? decoded['error']['message']?.toString()
+                : decoded['message']?.toString())
+            : null;
+        throw ApiException(response.statusCode, detail ?? 'Provider request failed.');
+      }
+      if (decoded is! Map || decoded['choices'] is! List || (decoded['choices'] as List).isEmpty) {
+        throw ApiException(502, 'Provider returned an unexpected chat-completion response.');
+      }
+      final choice = (decoded['choices'] as List).first;
+      final message = choice is Map ? choice['message'] : null;
+      final content = message is Map ? message['content'] : null;
+      if (content is String && content.trim().isNotEmpty) return content.trim();
+      if (content is List) {
+        final text = content
+            .whereType<Map>()
+            .where((part) => part['type'] == 'text')
+            .map((part) => part['text']?.toString() ?? '')
+            .join();
+        if (text.trim().isNotEmpty) return text.trim();
+      }
+      throw ApiException(502, 'Provider returned an empty assistant response.');
+    } on TimeoutException {
+      throw ApiException(408, 'Provider request timed out. Please try again.');
+    } on ApiException {
+      rethrow;
+    } catch (error) {
+      throw ApiException(503, 'Unable to reach the configured AI provider: $error');
     }
-
-    final choices = payload['choices'];
-    if (choices is! List || choices.isEmpty || choices.first is! Map) {
-      throw ApiException(502, 'Provider response did not contain a chat completion.');
-    }
-    final message = (choices.first as Map)['message'];
-    final content = message is Map ? message['content'] : null;
-    if (content is String && content.trim().isNotEmpty) return content.trim();
-    if (content is List) {
-      final text = content.whereType<Map>()
-          .where((part) => part['type'] == 'text')
-          .map((part) => part['text']?.toString() ?? '')
-          .join();
-      if (text.trim().isNotEmpty) return text.trim();
-    }
-    throw ApiException(502, 'Provider returned an empty assistant message.');
   }
 
   // --- Auth ---

@@ -25,18 +25,6 @@ jobs:
       - name: Run widget & unit tests
         run: flutter test
         working-directory: client
-      - name: Configure Android SDK command-line tools
-        run: |
-          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -perm -u+x -print -quit)"
-          if [ -z "$SDKMANAGER" ]; then
-            echo "Android SDK command-line tools were not found under $ANDROID_HOME/cmdline-tools" >&2
-            exit 1
-          fi
-          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
-          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
-          "$SDKMANAGER" --version
-      - name: Install pinned Android NDK
-        run: "$SDKMANAGER" --install "ndk;27.0.12077973"
       - name: Build release APK
         run: flutter build apk --release
         working-directory: client

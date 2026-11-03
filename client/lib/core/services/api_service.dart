@@ -135,13 +135,13 @@ class ApiService {
     while (configuredBase.endsWith('/')) {
       configuredBase = configuredBase.substring(0, configuredBase.length - 1);
     }
-    final endpoint = Uri.parse(configuredBase + '/chat/completions');
+    final endpoint = Uri.parse('$configuredBase/chat/completions');
 
     try {
       final response = await _client.post(
         endpoint,
         headers: <String, String>{
-          'Authorization': 'Bearer ' + apiKey,
+          'Authorization': 'Bearer $apiKey',
           'Content-Type': 'application/json',
           if (baseUri.host == 'openrouter.ai') ...{
             'HTTP-Referer': 'https://github.com/CodeByArnob/devforge-ai',
@@ -181,7 +181,7 @@ class ApiService {
     } on ApiException {
       rethrow;
     } catch (error) {
-      throw ApiException(503, 'Unable to reach the configured AI provider: ' + error.toString());
+      throw ApiException(503, 'Unable to reach the configured AI provider: $error');
     }
   }
   // --- Auth ---

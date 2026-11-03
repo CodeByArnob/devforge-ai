@@ -122,7 +122,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
   void _openSettingsModal() {
     final apiKeyController = TextEditingController(text: _vault.openRouterApiKey ?? '');
     final modelIdController = TextEditingController(text: _modelId);
-    final providerUrlController = TextEditingController(text: _vault.providerBaseUrl);
+    final providerUrlController = TextEditingController(text: _providerBaseUrl);
     final serverUrlController = TextEditingController(text: _vault.baseUrl);
     bool obscureKey = true;
     String modalProvider = _selectedProvider;
@@ -434,8 +434,8 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
   bool _isSoftwareEngineeringRequest(String prompt) {
     final value = prompt.toLowerCase().trim();
     const intentPatterns = [
-      r'\\b(build|create|implement|generate|develop|scaffold|code|debug|fix|refactor|write|modify|update)\\b',
-      r'\\b(app|application|website|web app|mobile app|api|backend|frontend|function|class|widget|project|repository|bug|error|crash|feature)\\b',
+      r'\b(build|create|implement|generate|develop|scaffold|code|debug|fix|refactor|write|modify|update)\b',
+      r'\b(app|application|website|web app|mobile app|api|backend|frontend|function|class|widget|project|repository|bug|error|crash|feature)\b',
     ];
     return intentPatterns.any((pattern) => RegExp(pattern).hasMatch(value)) &&
         value.length > 12;
@@ -447,8 +447,8 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
 
     _promptController.clear();
     final now = DateTime.now();
-    final userMessageId = 'user-${now.microsecondsSinceEpoch}';
-    final assistantMessageId = 'assistant-${now.microsecondsSinceEpoch}';
+    final userMessageId = 'user-' + now.microsecondsSinceEpoch.toString();
+    final assistantMessageId = 'assistant-' + now.microsecondsSinceEpoch.toString();
     final codingRequest = _isSoftwareEngineeringRequest(prompt);
 
     setState(() {
@@ -525,67 +525,6 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
         isThinking: false,
       );
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: const Text('Built autonomously with DevForge AI!'),
-    );
-  }
-}
-''';
-        patch = PatchProposalModel(
-          patchId: 'patch-custom-104',
-          taskId: task?.id ?? 'task-demo-custom',
-          baseSnapshotDigest: 'snap-base-004',
-          patchDigest: '38bdf834d399',
-          unifiedDiff: '''--- a/client/lib/solution.dart
-+++ b/client/lib/solution.dart
-@@ -0,0 +1,8 @@
-+// Verified patch applied cleanly
-+class FeatureModule {
-+  final bool isReady = true;
-+}''',
-          status: 'pending',
-          createdAt: DateTime.now(),
-        );
-      }
-
-      if (mounted) {
-        final idx = _messages.indexWhere((m) => m.id == assistantMessageId);
-        if (idx != -1) {
-          setState(() {
-            _messages[idx] = _messages[idx].copyWith(
-              text: responseText,
-              agentEvents: events,
-              codeSnippet: codeSnippet,
-              codeLanguage: codeLanguage,
-              patch: patch,
-              isThinking: false,
-            );
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        final idx = _messages.indexWhere((m) => m.id == assistantMessageId);
-        if (idx != -1) {
-          setState(() {
-            _messages[idx] = _messages[idx].copyWith(
-              text: 'Execution encountered an issue: $e. You can configure your API key in Settings.',
-              isThinking: false,
-            );
-          });
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isGenerating = false);
-        _scrollToBottom();
-      }
-    }
   }
 
   @override

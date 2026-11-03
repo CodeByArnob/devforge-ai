@@ -100,7 +100,7 @@ class MainActivity : FlutterActivity() {
                 if (results.size >= maxEntries) break
                 val canonical = child.canonicalFile
                 if (canonical != root && !canonical.path.startsWith(root.path + File.separator)) continue
-                val relative = root.toPath().relativize(canonical.toPath()).toString().replace(File.separatorChar, '/')
+                val relative = canonical.path.removePrefix(root.path + File.separator).replace(File.separatorChar, '/')
                 results += mapOf(
                     "name" to child.name,
                     "path" to relative,

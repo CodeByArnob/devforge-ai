@@ -100,7 +100,7 @@ class _NativeWorkspaceScreenState extends State<NativeWorkspaceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final runtimeInstalled = _runtime['linuxRuntimeInstalled'] == true;
+    final runtimeInstalled = _runtime['linuxRuntimeInstalled'] == true;\n    final abis = _runtime['supportedAbis'] as List?;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Device Workspace'),
@@ -146,7 +146,7 @@ class _NativeWorkspaceScreenState extends State<NativeWorkspaceScreen> {
                       runSpacing: 8,
                       children: [
                         _InfoChip(label: 'Android API ${_runtime['sdkInt'] ?? '—'}'),
-                        _InfoChip(label: 'ABI ${(_runtime['supportedAbis'] as List?)?.firstOrNull ?? '—'}'),
+                        _InfoChip(label: 'ABI ${(abis != null && abis.isNotEmpty ? abis.first : '—')}'),
                         const _InfoChip(label: 'Private storage'),
                       ],
                     ),

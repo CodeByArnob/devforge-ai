@@ -338,7 +338,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.lock_outline, size: 18),
-                        label: const Text('Save Settings to Vault', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: const Text('Apply Provider Settings', style: TextStyle(fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF5A77F6),
                           foregroundColor: Colors.white,
@@ -358,7 +358,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Settings saved securely to device vault!'),
+                              content: Text('Provider settings applied for this app session.'),
                               backgroundColor: Color(0xFF1E293B),
                             ),
                           );

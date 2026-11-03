@@ -115,6 +115,602 @@ class ApiService {
     return headers;
   }
 
+  /// Sends a real chat-completion request to the selected OpenAI-compatible provider.
+  /// The base URL is provider-specific and is never confused with the DevForge backend URL.
+  Future<String> createChatCompletion({
+    required String model,
+    required List<Map<String, String>> messages,
+  }) async {
+    final apiKey = vault.openRouterApiKey?.trim();
+    if (apiKey == null || apiKey.isEmpty || apiKey == 'sk-or-v1-free-router-demo') {
+      throw ApiException(401, 'Add your provider API key in AI & Engine Settings before chatting.');
+    }
+
+    final base = vault.providerBaseUrl.trim().replaceAll(RegExp(r'/+  Future<UserModel> login(String email, String password) async {
+    if (vault.isDemoMode) {
+      vault.enterDemoMode();
+      return _demoUser;
+    }
+    try {
+      final res = await _client.post(
+        Uri.parse('${vault.baseUrl}/api/v1/auth/login'),
+        headers: _headers(requiresAuth: false),
+        body: jsonEncode({'email': email, 'password': password}),
+      ).timeout(const Duration(seconds: 6));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        vault.isDemoMode = false;
+        vault.accessToken = data['access_token'];
+        vault.refreshToken = data['refresh_token'];
+        return UserModel.fromJson(data['user']);
+      }
+      final err = jsonDecode(res.body);
+      throw ApiException(res.statusCode, err['detail'] ?? 'Login failed');
+    } on TimeoutException {
+      throw ApiException(
+        408,
+        'Connection timed out reaching ${vault.baseUrl}.\n'
+        '• On a physical mobile phone, do NOT use 10.0.2.2 (that is for emulator only).\n'
+        '• Enter your computer Wi-Fi IP or tap "Explore in Offline Demo Mode" below.',
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        503,
+        'Cannot connect to server at ${vault.baseUrl}.\n'
+        '• Please ensure backend is running or tap "Explore in Offline Demo Mode" below.',
+      );
+    }
+  }
+
+  Future<UserModel> register(String email, String password) async {
+    if (vault.isDemoMode) {
+      vault.enterDemoMode();
+      return _demoUser;
+    }
+    try {
+      final res = await _client.post(
+        Uri.parse('${vault.baseUrl}/api/v1/auth/register'),
+        headers: _headers(requiresAuth: false),
+        body: jsonEncode({'email': email, 'password': password}),
+      ).timeout(const Duration(seconds: 6));
+      if (res.statusCode == 201) {
+        final data = jsonDecode(res.body);
+        vault.isDemoMode = false;
+        vault.accessToken = data['access_token'];
+        vault.refreshToken = data['refresh_token'];
+        return UserModel.fromJson(data['user']);
+      }
+      final err = jsonDecode(res.body);
+      throw ApiException(res.statusCode, err['detail'] ?? 'Registration failed');
+    } on TimeoutException {
+      throw ApiException(
+        408,
+        'Connection timed out reaching ${vault.baseUrl}.\n'
+        '• Please enter your computer Wi-Fi IP or tap "Explore in Offline Demo Mode" below.',
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        503,
+        'Cannot connect to server at ${vault.baseUrl}.\n'
+        '• Please ensure backend is running or tap "Explore in Offline Demo Mode" below.',
+      );
+    }
+  }
+
+  Future<void> logout() async {
+    if (vault.isDemoMode) {
+      vault.clearAll();
+      return;
+    }
+    try {
+      await _client.post(
+        Uri.parse('${vault.baseUrl}/api/v1/auth/logout'),
+        headers: _headers(),
+      );
+    } finally {
+      vault.clearSession();
+    }
+  }
+
+  Future<String?> requestPasswordRecovery(String email) async {
+    if (vault.isDemoMode) {
+      return 'demo-recovery-token-xyz789';
+    }
+    try {
+      final res = await _client.post(
+        Uri.parse('${vault.baseUrl}/api/v1/auth/recover/request'),
+        headers: _headers(requiresAuth: false),
+        body: jsonEncode({'email': email}),
+      ).timeout(const Duration(seconds: 6));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        return data['recovery_token'] as String?;
+      }
+      final err = jsonDecode(res.body);
+      throw ApiException(res.statusCode, err['detail'] ?? 'Recovery request failed');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(503, 'Failed to connect to recovery service: $e');
+    }
+  }
+
+  Future<void> resetPassword(String token, String newPassword) async {
+    if (vault.isDemoMode) return;
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/auth/recover/reset'),
+      headers: _headers(requiresAuth: false),
+      body: jsonEncode({'token': token, 'new_password': newPassword}),
+    );
+    if (res.statusCode != 200) {
+      final err = jsonDecode(res.body);
+      throw ApiException(res.statusCode, err['detail'] ?? 'Password reset failed');
+    }
+  }
+
+  Future<UserModel> getMe() async {
+    if (vault.isDemoMode) return _demoUser;
+    final res = await _client.get(
+      Uri.parse('${vault.baseUrl}/api/v1/auth/me'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return UserModel.fromJson(jsonDecode(res.body));
+    }
+    throw ApiException(res.statusCode, 'Failed to fetch user profile');
+  }
+
+  // --- Projects ---
+  Future<List<ProjectModel>> listProjects({int limit = 20}) async {
+    if (vault.isDemoMode) return _demoProjects;
+    try {
+      final res = await _client.get(
+        Uri.parse('${vault.baseUrl}/api/v1/projects?limit=$limit'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List<dynamic>;
+        return list.map((e) => ProjectModel.fromJson(e)).toList();
+      }
+    } catch (_) {}
+    return _demoProjects;
+  }
+
+  Future<ProjectModel> getProject(String projectId) async {
+    if (vault.isDemoMode) {
+      return _demoProjects.firstWhere((p) => p.id == projectId, orElse: () => _demoProjects.first);
+    }
+    try {
+      final res = await _client.get(
+        Uri.parse('${vault.baseUrl}/api/v1/projects/$projectId'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        return ProjectModel.fromJson(jsonDecode(res.body));
+      }
+    } catch (_) {}
+    return _demoProjects.first;
+  }
+
+  Future<Map<String, dynamic>> importGitHub(String owner, String repo, {String? ref}) async {
+    if (vault.isDemoMode) {
+      return {'id': 'proj-demo-imported', 'name': repo, 'status': 'ready'};
+    }
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/projects/import/github'),
+      headers: _headers(),
+      body: jsonEncode({'owner': owner, 'repository': repo, 'ref': ref}),
+    );
+    if (res.statusCode == 201) {
+      return jsonDecode(res.body);
+    }
+    final err = jsonDecode(res.body);
+    throw ApiException(res.statusCode, err['detail'] ?? 'GitHub import failed');
+  }
+
+  Future<ProjectModel> claimProject(String projectId, String claimSecret, {String? reason}) async {
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/projects/$projectId/claim'),
+      headers: _headers(),
+      body: jsonEncode({'claim_secret': claimSecret, 'reason': reason}),
+    );
+    if (res.statusCode == 200) {
+      return ProjectModel.fromJson(jsonDecode(res.body));
+    }
+    final err = jsonDecode(res.body);
+    throw ApiException(res.statusCode, err['detail'] ?? 'Claim project failed');
+  }
+
+  Future<Map<String, dynamic>> getProjectInventory(String projectId) async {
+    if (vault.isDemoMode) {
+      return {
+        'total_files': 42,
+        'entries': [
+          {'path': 'backend/app/main.py', 'size_bytes': 1240},
+          {'path': 'runner/runtime_policy.py', 'size_bytes': 2850},
+          {'path': 'client/lib/main.dart', 'size_bytes': 1890},
+        ]
+      };
+    }
+    final res = await _client.get(
+      Uri.parse('${vault.baseUrl}/api/v1/projects/$projectId/inventory'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+    throw ApiException(res.statusCode, 'Failed to fetch inventory');
+  }
+
+  Future<Map<String, dynamic>> inspectFile(String projectId, String path) async {
+    if (vault.isDemoMode) {
+      return {'path': path, 'content': '# DevForge AI Source File\nprint("Hello DevForge AI")\n'};
+    }
+    final uri = Uri.parse('${vault.baseUrl}/api/v1/projects/$projectId/files/inspect').replace(
+      queryParameters: {'path': path},
+    );
+    final res = await _client.get(uri, headers: _headers());
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+    throw ApiException(res.statusCode, 'File inspection failed');
+  }
+
+  // --- Tasks & Agent ---
+  Future<List<TaskModel>> listTasks({int limit = 20}) async {
+    if (vault.isDemoMode) return _demoTasks;
+    try {
+      final res = await _client.get(
+        Uri.parse('${vault.baseUrl}/api/v1/tasks?limit=$limit'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List<dynamic>;
+        return list.map((e) => TaskModel.fromJson(e)).toList();
+      }
+    } catch (_) {}
+    return _demoTasks;
+  }
+
+  Future<TaskModel> getTask(String taskId) async {
+    if (vault.isDemoMode) {
+      return _demoTasks.firstWhere((t) => t.id == taskId, orElse: () => _demoTasks.first);
+    }
+    try {
+      final res = await _client.get(
+        Uri.parse('${vault.baseUrl}/api/v1/tasks/$taskId'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        return TaskModel.fromJson(jsonDecode(res.body));
+      }
+    } catch (_) {}
+    return _demoTasks.first;
+  }
+
+  Future<TaskModel> createTask(String projectId, String instruction, {String? model}) async {
+    if (vault.isDemoMode) {
+      final newTask = TaskModel(
+        id: 'task-demo-${DateTime.now().millisecondsSinceEpoch}',
+        projectId: projectId,
+        instruction: instruction,
+        status: 'awaiting_approval',
+        approvalDecision: 'pending',
+        selectedModel: model ?? 'openrouter/free',
+        createdAt: DateTime.now(),
+      );
+      _demoTasks.insert(0, newTask);
+      return newTask;
+    }
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/tasks'),
+      headers: _headers(),
+      body: jsonEncode({
+        'project_id': projectId,
+        'instruction': instruction,
+        'selected_model': model,
+      }),
+    );
+    if (res.statusCode == 201) {
+      return TaskModel.fromJson(jsonDecode(res.body));
+    }
+    final err = jsonDecode(res.body);
+    throw ApiException(res.statusCode, err['detail'] ?? 'Create task failed');
+  }
+
+  Future<TaskModel> cancelTask(String taskId) async {
+    if (vault.isDemoMode) {
+      return _demoTasks.first;
+    }
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/tasks/$taskId/cancel'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return TaskModel.fromJson(jsonDecode(res.body));
+    }
+    throw ApiException(res.statusCode, 'Failed to cancel task');
+  }
+
+  Future<Map<String, dynamic>> runAgentTeam(String taskId, {String? model, List<String>? roles}) async {
+    if (vault.isDemoMode) {
+      return {'status': 'in_progress', 'task_id': taskId};
+    }
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/tasks/$taskId/agent/run'),
+      headers: _headers(requiresOpenRouter: true),
+      body: jsonEncode({'model': model, 'roles': roles}),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+    final err = jsonDecode(res.body);
+    throw ApiException(res.statusCode, err['detail'] ?? 'Agent run failed');
+  }
+
+  Future<Map<String, dynamic>> decideTaskApproval(String taskId, String decision, {String? note}) async {
+    if (vault.isDemoMode) {
+      return {'decision': decision, 'status': 'completed'};
+    }
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/tasks/$taskId/approval'),
+      headers: _headers(),
+      body: jsonEncode({'decision': decision, 'note': note}),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+    final err = jsonDecode(res.body);
+    throw ApiException(res.statusCode, err['detail'] ?? 'Approval decision failed');
+  }
+
+  Stream<TaskEventModel> streamTaskEvents(String taskId, {int after = 0}) async* {
+    if (vault.isDemoMode) {
+      final events = [
+        TaskEventModel(
+          sequence: 1,
+          eventType: 'agent_started',
+          message: 'Architect analyzing module boundaries, container isolation, and UID 65532 policy.',
+          payload: {'agent_role': 'architect'},
+          createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        ),
+        TaskEventModel(
+          sequence: 2,
+          eventType: 'agent_progress',
+          message: 'Planner generated ordered milestone roadmap with verification checkpoints.',
+          payload: {'agent_role': 'planner'},
+          createdAt: DateTime.now().subtract(const Duration(minutes: 4)),
+        ),
+        TaskEventModel(
+          sequence: 3,
+          eventType: 'security_audited',
+          message: 'Security Reviewer passed OWASP checks. Dropped Linux capabilities (cap-drop=ALL).',
+          payload: {'agent_role': 'security_reviewer'},
+          createdAt: DateTime.now().subtract(const Duration(minutes: 3)),
+        ),
+        TaskEventModel(
+          sequence: 4,
+          eventType: 'patch_proposed',
+          message: 'Coder synthesized runtime_policy.py proposal with precondition sha256 checksums.',
+          payload: {'agent_role': 'coder'},
+          createdAt: DateTime.now().subtract(const Duration(minutes: 2)),
+        ),
+        TaskEventModel(
+          sequence: 5,
+          eventType: 'qa_verified',
+          message: 'QA Engineer executed complete test suite: 77/77 tests passed. Ready for review.',
+          payload: {'agent_role': 'qa_engineer'},
+          createdAt: DateTime.now().subtract(const Duration(minutes: 1)),
+        ),
+      ];
+      for (final ev in events) {
+        if (ev.sequence > after) yield ev;
+      }
+      return;
+    }
+
+    try {
+      final request = http.Request(
+        'GET',
+        Uri.parse('${vault.baseUrl}/api/v1/tasks/$taskId/events?after=$after'),
+      );
+      request.headers.addAll(_headers());
+
+      final response = await _client.send(request);
+      if (response.statusCode != 200) {
+        throw ApiException(response.statusCode, 'Failed to connect to event stream');
+      }
+
+      final lines = response.stream.transform(utf8.decoder).transform(const LineSplitter());
+      String currentData = '';
+
+      await for (final line in lines) {
+        if (line.startsWith('data: ')) {
+          currentData = line.substring(6);
+        } else if (line.isEmpty && currentData.isNotEmpty) {
+          try {
+            final json = jsonDecode(currentData);
+            yield TaskEventModel.fromJson(json);
+          } catch (_) {}
+          currentData = '';
+        }
+      }
+    } catch (_) {}
+  }
+
+  // --- Patches ---
+  Future<List<PatchProposalModel>> listPatches(String taskId) async {
+    if (vault.isDemoMode) {
+      return [
+        PatchProposalModel(
+          patchId: 'patch-demo-1',
+          taskId: taskId,
+          baseSnapshotDigest: 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',
+          patchDigest: 'f9e8d7c6b5a43210f9e8d7c6b5a43210f9e8d7c6b5a43210f9e8d7c6b5a43210',
+          unifiedDiff: '--- a/runner/runtime_policy.py\n+++ b/runner/runtime_policy.py\n@@ -0,0 +1,5 @@\n+class PodmanSandboxPolicy:\n+    user = "65532:65532"\n+    read_only_root = True\n+    network_mode = "none"\n',
+          changes: [
+            {'path': 'runner/runtime_policy.py', 'action': 'create'}
+          ],
+          status: 'pending',
+          createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
+        ),
+      ];
+    }
+    try {
+      final res = await _client.get(
+        Uri.parse('${vault.baseUrl}/api/v1/tasks/$taskId/patches'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List<dynamic>;
+        return list.map((e) => PatchProposalModel.fromJson(e)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<PatchProposalModel> getPatch(String taskId, String patchId) async {
+    final list = await listPatches(taskId);
+    if (list.isNotEmpty) return list.first;
+    throw ApiException(404, 'Patch not found');
+  }
+
+  Future<Map<String, dynamic>> approvePatch(String taskId, String patchId, {String? note}) async {
+    if (vault.isDemoMode) return {'status': 'applied'};
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/tasks/$taskId/patches/$patchId/approve'),
+      headers: _headers(),
+      body: jsonEncode({'note': note}),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+    final err = jsonDecode(res.body);
+    throw ApiException(res.statusCode, err['detail'] ?? 'Approve patch failed');
+  }
+
+  Future<Map<String, dynamic>> rejectPatch(String taskId, String patchId, {String? note}) async {
+    if (vault.isDemoMode) return {'status': 'rejected'};
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/tasks/$taskId/patches/$patchId/reject'),
+      headers: _headers(),
+      body: jsonEncode({'note': note}),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+    final err = jsonDecode(res.body);
+    throw ApiException(res.statusCode, err['detail'] ?? 'Reject patch failed');
+  }
+
+  Future<Map<String, dynamic>> rollbackPatch(String taskId, String patchId) async {
+    if (vault.isDemoMode) return {'status': 'rolled_back'};
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/tasks/$taskId/patches/$patchId/rollback'),
+      headers: _headers(),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+    final err = jsonDecode(res.body);
+    throw ApiException(res.statusCode, err['detail'] ?? 'Rollback patch failed');
+  }
+
+  // --- Local GGUF Models ---
+  Future<List<LocalGGUFModel>> listLocalModels() async {
+    if (vault.isDemoMode) return _demoGGUFModels;
+    try {
+      final res = await _client.get(
+        Uri.parse('${vault.baseUrl}/api/v1/ai/local/catalogue'),
+        headers: _headers(),
+      ).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List<dynamic>;
+        return list.map((e) => LocalGGUFModel.fromJson(e)).toList();
+      }
+    } catch (_) {}
+    return _demoGGUFModels;
+  }
+
+  Future<Map<String, dynamic>> validateGGUF(String filePath, {String? expectedSha256}) async {
+    if (vault.isDemoMode) {
+      return {'valid': true, 'sha256': expectedSha256 ?? 'verified-sha256-hash', 'file_path': filePath};
+    }
+    final res = await _client.post(
+      Uri.parse('${vault.baseUrl}/api/v1/ai/local/validate'),
+      headers: _headers(),
+      body: jsonEncode({'file_path': filePath, 'expected_sha256': expectedSha256}),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    }
+    final err = jsonDecode(res.body);
+    throw ApiException(res.statusCode, err['detail'] ?? 'GGUF validation failed');
+  }
+}
+), '');
+    if (base.isEmpty) {
+      throw ApiException(400, 'AI provider Base URL is missing. Select a provider to fill it automatically.');
+    }
+
+    final uri = Uri.tryParse('$base/chat/completions');
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty ||
+        (uri.scheme != 'https' && uri.scheme != 'http')) {
+      throw ApiException(400, 'Invalid provider Base URL. Use a valid HTTPS endpoint.');
+    }
+
+    final headers = <String, String>{
+      'Authorization': 'Bearer $apiKey',
+      'Content-Type': 'application/json',
+    };
+    if (base.contains('openrouter.ai')) {
+      headers['HTTP-Referer'] = 'https://github.com/CodeByArnob/devforge-ai';
+      headers['X-Title'] = 'DevForge AI';
+    }
+
+    final response = await _client.post(
+      uri,
+      headers: headers,
+      body: jsonEncode({
+        'model': model,
+        'messages': messages,
+        'temperature': 0.7,
+        'max_tokens': 2048,
+        'stream': false,
+      }),
+    ).timeout(const Duration(seconds: 90));
+
+    Map<String, dynamic> payload;
+    try {
+      payload = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw ApiException(response.statusCode, 'Provider returned an unreadable response (HTTP ${response.statusCode}).');
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final error = payload['error'];
+      final detail = error is Map ? error['message']?.toString() : error?.toString();
+      throw ApiException(response.statusCode, detail ?? 'AI provider request failed (HTTP ${response.statusCode}).');
+    }
+
+    final choices = payload['choices'];
+    if (choices is! List || choices.isEmpty || choices.first is! Map) {
+      throw ApiException(502, 'Provider response did not contain a chat completion.');
+    }
+    final message = (choices.first as Map)['message'];
+    final content = message is Map ? message['content'] : null;
+    if (content is String && content.trim().isNotEmpty) return content.trim();
+    if (content is List) {
+      final text = content.whereType<Map>()
+          .where((part) => part['type'] == 'text')
+          .map((part) => part['text']?.toString() ?? '')
+          .join();
+      if (text.trim().isNotEmpty) return text.trim();
+    }
+    throw ApiException(502, 'Provider returned an empty assistant message.');
+  }
+
   // --- Auth ---
   Future<UserModel> login(String email, String password) async {
     if (vault.isDemoMode) {

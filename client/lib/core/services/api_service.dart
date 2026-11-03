@@ -115,6 +115,75 @@ class ApiService {
     return headers;
   }
 
+  /// Calls the selected OpenAI-compatible provider for ordinary chat only.
+  /// Repository tools and multi-agent execution use the authenticated backend APIs.
+  Future<String> createChatCompletion({
+    required String model,
+    required List<Map<String, String>> messages,
+  }) async {
+    final apiKey = vault.openRouterApiKey?.trim();
+    if (apiKey == null || apiKey.isEmpty || apiKey == 'sk-or-v1-free-router-demo') {
+      throw ApiException(401, 'Add a valid provider API key in AI Studio settings.');
+    }
+
+    var configuredBase = vault.providerBaseUrl.trim();
+    final baseUri = Uri.tryParse(configuredBase);
+    if (baseUri == null || !baseUri.hasAuthority ||
+        (baseUri.scheme != 'https' && baseUri.scheme != 'http')) {
+      throw ApiException(400, 'Provider API Base URL must be a valid HTTP(S) URL.');
+    }
+    while (configuredBase.endsWith('/')) {
+      configuredBase = configuredBase.substring(0, configuredBase.length - 1);
+    }
+    final endpoint = Uri.parse('$configuredBase/chat/completions');
+
+    try {
+      final response = await _client.post(
+        endpoint,
+        headers: <String, String>{
+          'Authorization': 'Bearer $apiKey',
+          'Content-Type': 'application/json',
+          if (baseUri.host == 'openrouter.ai') ...{
+            'HTTP-Referer': 'https://github.com/CodeByArnob/devforge-ai',
+            'X-Title': 'DevForge AI',
+          },
+        },
+        body: jsonEncode({'model': model, 'messages': messages, 'stream': false}),
+      ).timeout(const Duration(seconds: 90));
+
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final detail = decoded is Map
+            ? (decoded['error'] is Map
+                ? decoded['error']['message']?.toString()
+                : decoded['message']?.toString())
+            : null;
+        throw ApiException(response.statusCode, detail ?? 'Provider request failed.');
+      }
+      if (decoded is! Map || decoded['choices'] is! List ||
+          (decoded['choices'] as List).isEmpty) {
+        throw ApiException(502, 'Provider returned an unexpected chat-completion response.');
+      }
+      final choice = (decoded['choices'] as List).first;
+      final message = choice is Map ? choice['message'] : null;
+      final content = message is Map ? message['content'] : null;
+      if (content is String && content.trim().isNotEmpty) return content.trim();
+      if (content is List) {
+        final text = content.whereType<Map>()
+            .where((part) => part['type'] == 'text')
+            .map((part) => part['text']?.toString() ?? '')
+            .join();
+        if (text.trim().isNotEmpty) return text.trim();
+      }
+      throw ApiException(502, 'Provider returned an empty assistant response.');
+    } on TimeoutException {
+      throw ApiException(408, 'Provider request timed out. Please try again.');
+    } on ApiException {
+      rethrow;
+    } catch (error) {
+      throw ApiException(503, 'Unable to reach the configured AI provider: $error');
+    }
+  }
   // --- Auth ---
   Future<UserModel> login(String email, String password) async {
     if (vault.isDemoMode) {

@@ -7,7 +7,8 @@ plugins {
 android {
     namespace = "com.devforge.ai.client"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Pin an explicit NDK version so CI and local builds use the same toolchain.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

@@ -6,11 +6,13 @@ class SecureVault {
   SecureVault._internal();
 
   final Map<String, String> _storage = {};
-  final StreamController<String> _vaultUpdates = StreamController<String>.broadcast();
+  final StreamController<String> _vaultUpdates =
+      StreamController<String>.broadcast();
 
   Stream<String> get onVaultUpdated => _vaultUpdates.stream;
 
-  String _baseUrl = 'http://10.0.2.2:8000'; // Default for Android emulator
+  String _baseUrl = '';
+  String _providerBaseUrl = 'https://openrouter.ai/api/v1';
   String? _accessToken;
   String? _refreshToken;
   String? _openRouterApiKey;
@@ -27,14 +29,21 @@ class SecureVault {
     isDemoMode = true;
     accessToken = 'devforge-demo-session-token';
     refreshToken = 'devforge-demo-refresh-token';
-    openRouterApiKey = openRouterApiKey ?? 'sk-or-v1-free-router-demo';
+    // Never insert a fake provider key: live chat requires a real user key.
   }
 
   String get baseUrl => _baseUrl;
   set baseUrl(String url) {
-    _baseUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+    _baseUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
     _storage['baseUrl'] = _baseUrl;
     _vaultUpdates.add('baseUrl');
+  }
+
+  String get providerBaseUrl => _providerBaseUrl;
+  set providerBaseUrl(String url) {
+    _providerBaseUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
+    _storage['providerBaseUrl'] = _providerBaseUrl;
+    _vaultUpdates.add('providerBaseUrl');
   }
 
   String? get accessToken => _accessToken;
@@ -62,7 +71,7 @@ class SecureVault {
   String? get openRouterApiKey => _openRouterApiKey;
   set openRouterApiKey(String? key) {
     _openRouterApiKey = key;
-    if (key == null) {
+    if (key == null || key.isEmpty) {
       _storage.remove('openRouterApiKey');
     } else {
       _storage['openRouterApiKey'] = key;
@@ -93,8 +102,10 @@ class SecureVault {
   }
 
   bool get isAuthenticated => _accessToken != null && _accessToken!.isNotEmpty;
-  bool get hasOpenRouterKey => _openRouterApiKey != null && _openRouterApiKey!.isNotEmpty;
-  bool get isGitHubConnected => _githubUsername != null && _githubUsername!.isNotEmpty;
+  bool get hasOpenRouterKey =>
+      _openRouterApiKey != null && _openRouterApiKey!.isNotEmpty;
+  bool get isGitHubConnected =>
+      _githubUsername != null && _githubUsername!.isNotEmpty;
 
   void clearSession() {
     _accessToken = null;
@@ -106,6 +117,8 @@ class SecureVault {
 
   void clearAll() {
     _storage.clear();
+    _baseUrl = '';
+    _providerBaseUrl = 'https://openrouter.ai/api/v1';
     _accessToken = null;
     _refreshToken = null;
     _openRouterApiKey = null;

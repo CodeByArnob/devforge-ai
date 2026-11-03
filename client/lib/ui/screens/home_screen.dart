@@ -5,6 +5,7 @@ import 'editor_screen.dart';
 import 'local_models_screen.dart';
 import 'projects_screen.dart';
 import 'vault_settings_screen.dart';
+import 'native_workspace_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -16,13 +17,19 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  bool _workspaceVisited = false;
   String? _editorFileName;
   String? _editorCode;
   String? _editorLanguage;
   String? _buildTargetProject;
 
   void _switchTab(int index) {
-    setState(() => _currentIndex = index);
+    setState(() {
+      _currentIndex = index;
+      // Defer the native MethodChannel handshake until the user opens Device.
+      // This keeps startup deterministic on web and in widget tests.
+      if (index == 5) _workspaceVisited = true;
+    });
   }
 
   void _openProjectInEditor(String fileName, String code, String language) {
@@ -79,6 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
       BuildsScreen(
         targetProjectName: _buildTargetProject,
       ),
+      _workspaceVisited
+          ? const NativeWorkspaceScreen()
+          : const _DeviceWorkspacePlaceholder(),
     ];
 
     return Scaffold(
@@ -113,6 +123,10 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(
             icon: Icon(Icons.rocket_launch_rounded, size: 22),
             label: 'Builds',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.terminal_rounded, size: 22),
+            label: 'Device',
           ),
         ],
       ),
@@ -389,4 +403,11 @@ class _HomeDashboardTab extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DeviceWorkspacePlaceholder extends StatelessWidget {
+  const _DeviceWorkspacePlaceholder();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

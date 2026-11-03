@@ -5,6 +5,7 @@ import 'editor_screen.dart';
 import 'local_models_screen.dart';
 import 'projects_screen.dart';
 import 'vault_settings_screen.dart';
+import 'native_workspace_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onLogout;

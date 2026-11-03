@@ -383,43 +383,44 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
   }
 
   Future<void> _handleDecision(String messageId, String decision) async {
-    final index = _messages.indexWhere((m) => m.id == messageId);
+    final index = _messages.indexWhere((message) => message.id == messageId);
     if (index == -1) return;
+    final message = _messages[index];
+    final patch = message.patch;
+    if (patch == null || patch.taskId == null || patch.taskId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This patch is not linked to a real backend task.')),
+      );
+      return;
+    }
 
-    final msg = _messages[index];
-    final patch = msg.patch;
-    if (patch == null) return;
-
-    setState(() {
-      _messages[index] = msg.copyWith(patchDecision: decision);
-    });
-
-    if (decision == 'approved') {
-      try {
-        await _api.approvePatch(patch.taskId ?? 'task-demo-101', patch.patchId);
-      } catch (_) {}
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Color(0xFF34D399), size: 18),
-                SizedBox(width: 8),
-                Text('Patch approved and applied to project workspace!'),
-              ],
-            ),
-            backgroundColor: Color(0xFF121A29),
-          ),
-        );
+    try {
+      if (decision == 'approved') {
+        final result = await _api.approvePatch(patch.taskId!, patch.patchId);
+        if (result['status'] != 'applied') {
+          throw ApiException(409, 'The backend did not confirm that the patch was applied.');
+        }
+      } else {
+        await _api.rejectPatch(patch.taskId!, patch.patchId);
       }
-    } else {
-      try {
-        await _api.rejectPatch(patch.taskId ?? 'task-demo-101', patch.patchId);
-      } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        _messages[index] = message.copyWith(patchDecision: decision);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(decision == 'approved'
+              ? 'Patch approved. A verified immutable snapshot was created.'
+              : 'Patch rejected.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Patch decision failed: $error')),
+      );
     }
   }
-
   void _copyToClipboard(String text, String label) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(

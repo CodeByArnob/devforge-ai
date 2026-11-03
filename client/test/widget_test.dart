@@ -107,7 +107,7 @@ void main() {
     expect(find.text('Builds'), findsOneWidget);
   });
 
-  testWidgets('AIStudioScreen renders full-screen ChatGPT chat interface and settings modal', (WidgetTester tester) async {
+  testWidgets('AIStudioScreen renders conversational chat interface and provider settings modal', (WidgetTester tester) async {
     final vault = SecureVault();
     vault.enterDemoMode();
 
@@ -125,7 +125,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('AI & Engine Settings'), findsOneWidget);
-    expect(find.text('Save Settings to Vault'), findsOneWidget);
+    expect(find.text('Apply Provider Settings'), findsOneWidget);
+    expect(find.text('Provider API Base URL'), findsOneWidget);
+    expect(find.text('DevForge Backend URL (optional)'), findsOneWidget);
   });
 
   testWidgets('ProjectsScreen allows custom GitHub account connection and repository permission management', (WidgetTester tester) async {

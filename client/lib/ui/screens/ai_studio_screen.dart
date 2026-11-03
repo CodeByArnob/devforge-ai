@@ -73,6 +73,16 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
   bool _isGenerating = false;
   String _selectedProvider = 'OpenRouter';
   String _modelId = 'openai/gpt-4o-mini';
+  String _providerBaseUrl = 'https://openrouter.ai/api/v1';
+
+  static const Map<String, Map<String, String>> _providerPresets = {
+    'OpenRouter': {'url': 'https://openrouter.ai/api/v1', 'model': 'openai/gpt-4o-mini'},
+    'OpenAI': {'url': 'https://api.openai.com/v1', 'model': 'gpt-4o-mini'},
+    'Groq': {'url': 'https://api.groq.com/openai/v1', 'model': 'llama-3.3-70b-versatile'},
+    'DeepSeek': {'url': 'https://api.deepseek.com', 'model': 'deepseek-flash'},
+    'Together AI': {'url': 'https://api.together.xyz/v1', 'model': 'meta-llama/Llama-3.3-70B-Instruct-Turbo'},
+    'Mistral AI': {'url': 'https://api.mistral.ai/v1', 'model': 'mistral-large-latest'},
+  };
 
   final List<String> _quickPrompts = [
     'Create Python FastAPI JWT Auth Router',
@@ -84,6 +94,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
   @override
   void initState() {
     super.initState();
+    _providerBaseUrl = _vault.providerBaseUrl;
     if (_vault.openRouterApiKey != null && _vault.openRouterApiKey!.isNotEmpty) {
       _selectedProvider = 'OpenRouter';
     }
@@ -111,6 +122,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
   void _openSettingsModal() {
     final apiKeyController = TextEditingController(text: _vault.openRouterApiKey ?? '');
     final modelIdController = TextEditingController(text: _modelId);
+    final providerUrlController = TextEditingController(text: _vault.providerBaseUrl);
     final serverUrlController = TextEditingController(text: _vault.baseUrl);
     bool obscureKey = true;
     String modalProvider = _selectedProvider;
@@ -184,22 +196,20 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
                           dropdownColor: const Color(0xFF101726),
                           style: const TextStyle(color: Colors.white, fontSize: 13.5),
                           items: const [
-                            DropdownMenuItem(value: 'OpenRouter', child: Text('OpenRouter Cloud')),
-                            DropdownMenuItem(value: 'Qwen 2.5 Coder', child: Text('Qwen 2.5 Coder (Local GGUF)')),
-                            DropdownMenuItem(value: 'OpenAI GPT-4o Mini', child: Text('OpenAI GPT-4o Mini')),
-                            DropdownMenuItem(value: 'Anthropic Claude', child: Text('Anthropic Claude 3.5 Sonnet')),
+                            DropdownMenuItem(value: 'OpenRouter', child: Text('OpenRouter')),
+                            DropdownMenuItem(value: 'OpenAI', child: Text('OpenAI')),
+                            DropdownMenuItem(value: 'Groq', child: Text('Groq')),
+                            DropdownMenuItem(value: 'DeepSeek', child: Text('DeepSeek')),
+                            DropdownMenuItem(value: 'Together AI', child: Text('Together AI')),
+                            DropdownMenuItem(value: 'Mistral AI', child: Text('Mistral AI')),
                           ],
                           onChanged: (val) {
                             if (val != null) {
                               setModalState(() {
                                 modalProvider = val;
-                                if (val.contains('Qwen')) {
-                                  modelIdController.text = 'qwen-2.5-coder-7b-instruct-q5km';
-                                } else if (val.contains('Claude')) {
-                                  modelIdController.text = 'anthropic/claude-3.5-sonnet';
-                                } else {
-                                  modelIdController.text = 'openai/gpt-4o-mini';
-                                }
+                                final preset = _providerPresets[val]!;
+                                providerUrlController.text = preset['url']!;
+                                modelIdController.text = preset['model']!;
                               });
                             }
                           },
@@ -235,7 +245,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
 
                     // API Key Field
                     const Text(
-                      'OpenRouter / Provider API Key',
+                      'Provider API Key',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
                     ),
                     const SizedBox(height: 6),
@@ -246,7 +256,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFF080B11),
-                        hintText: 'sk-or-v1-... (optional for local/demo)',
+                        hintText: 'Paste API key from the selected provider',
                         hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -269,9 +279,36 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Server Control Plane URL
+                    // Provider API Base URL (automatically populated by provider selection)
                     const Text(
-                      'Backend Control Plane URL',
+                      'Provider API Base URL',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: providerUrlController,
+                      keyboardType: TextInputType.url,
+                      style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFF080B11),
+                        hintText: 'https://openrouter.ai/api/v1',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFF1E293B)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFF1E293B)),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Optional backend endpoint
+                    const Text(
+                      'DevForge Backend URL (optional)',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
                     ),
                     const SizedBox(height: 6),
@@ -281,7 +318,7 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFF080B11),
-                        hintText: 'http://10.0.2.2:8000 or http://localhost:8000',
+                        hintText: 'Leave blank unless you host the DevForge backend',
                         hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12.5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -311,11 +348,11 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
                         onPressed: () {
                           final key = apiKeyController.text.trim();
                           _vault.openRouterApiKey = key.isEmpty ? null : key;
-                          if (serverUrlController.text.trim().isNotEmpty) {
-                            _vault.baseUrl = serverUrlController.text.trim();
-                          }
+                          _vault.providerBaseUrl = providerUrlController.text.trim();
+                          _vault.baseUrl = serverUrlController.text.trim();
                           setState(() {
                             _selectedProvider = modalProvider;
+                            _providerBaseUrl = providerUrlController.text.trim();
                             _modelId = modelIdController.text.trim();
                           });
                           Navigator.pop(ctx);
@@ -394,198 +431,101 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
     );
   }
 
+  bool _isSoftwareEngineeringRequest(String prompt) {
+    final value = prompt.toLowerCase().trim();
+    const intentPatterns = [
+      r'\\b(build|create|implement|generate|develop|scaffold|code|debug|fix|refactor|write|modify|update)\\b',
+      r'\\b(app|application|website|web app|mobile app|api|backend|frontend|function|class|widget|project|repository|bug|error|crash|feature)\\b',
+    ];
+    return intentPatterns.any((pattern) => RegExp(pattern).hasMatch(value)) &&
+        value.length > 12;
+  }
+
   Future<void> _sendMessage([String? presetText]) async {
-    final text = presetText ?? _promptController.text.trim();
-    if (text.isEmpty || _isGenerating) return;
+    final prompt = presetText ?? _promptController.text.trim();
+    if (prompt.isEmpty || _isGenerating) return;
 
     _promptController.clear();
-    final userMessageId = 'user-${DateTime.now().millisecondsSinceEpoch}';
-    final assistantMessageId = 'assistant-${DateTime.now().millisecondsSinceEpoch}';
+    final now = DateTime.now();
+    final userMessageId = 'user-${now.microsecondsSinceEpoch}';
+    final assistantMessageId = 'assistant-${now.microsecondsSinceEpoch}';
+    final codingRequest = _isSoftwareEngineeringRequest(prompt);
 
     setState(() {
       _messages.add(ChatMessage(
         id: userMessageId,
         isUser: true,
-        text: text,
-        timestamp: DateTime.now(),
+        text: prompt,
+        timestamp: now,
       ));
-
       _messages.add(ChatMessage(
         id: assistantMessageId,
         isUser: false,
-        text: 'DevForge AI agent team synthesizing solution...',
-        timestamp: DateTime.now(),
+        text: 'Thinking...',
+        timestamp: now,
         isThinking: true,
       ));
-
       _isGenerating = true;
     });
-
     _scrollToBottom();
 
     try {
-      // 1. Attempt backend multi-agent pipeline
-      TaskModel? task;
-      try {
-        task = await _api.createTask('proj-demo-1', text, model: _modelId);
-        await _api.runAgentTeam(task.id, model: _modelId);
-      } catch (_) {
-        // Fallback for offline mode
+      final history = _messages
+          .where((message) => !message.isThinking && message.text.isNotEmpty)
+          .toList();
+      final conversation = <Map<String, String>>[
+        {
+          'role': 'system',
+          'content': codingRequest
+              ? 'You are DevForge AI, a senior software engineering assistant. Help with the requested engineering task using accurate, practical guidance. Ask a concise clarification when essential details are missing. Provide code only when useful. Never claim that you ran tests, inspected a repository, changed files, applied a patch, or completed agent reviews unless a connected tool actually did so. This chat interface does not currently apply code changes.'
+              : 'You are DevForge AI, a helpful, natural conversational assistant. Reply directly to the user in a friendly, concise way. For greetings such as Hi or Hello, greet them naturally and ask how you can help. Do not invent coding tasks, code snippets, diffs, agent activity, security reviews, tests, or completed work. Only discuss software engineering when the user asks about it.',
+        },
+        ...history.take(20).map((message) => {
+          'role': message.isUser ? 'user' : 'assistant',
+          'content': message.text,
+        }),
+      ];
+
+      final answer = await _api.createChatCompletion(
+        model: _modelId,
+        messages: conversation,
+      );
+
+      if (!mounted) return;
+      final idx = _messages.indexWhere((message) => message.id == assistantMessageId);
+      if (idx != -1) {
+        setState(() {
+          _messages[idx] = _messages[idx].copyWith(
+            text: answer,
+            isThinking: false,
+          );
+        });
       }
-
-      final events = <TaskEventModel>[];
-      if (task != null) {
-        try {
-          await for (final event in _api.streamTaskEvents(task.id)) {
-            events.add(event);
-            if (mounted) {
-              final idx = _messages.indexWhere((m) => m.id == assistantMessageId);
-              if (idx != -1) {
-                setState(() {
-                  _messages[idx] = _messages[idx].copyWith(agentEvents: List.from(events));
-                });
-              }
-            }
-            await Future.delayed(const Duration(milliseconds: 200));
-          }
-        } catch (_) {}
+    } on TimeoutException {
+      _replaceAssistantError(assistantMessageId, 'The AI provider took too long to respond. Please try again.');
+    } on ApiException catch (error) {
+      _replaceAssistantError(assistantMessageId, error.message);
+    } catch (error) {
+      _replaceAssistantError(assistantMessageId, 'Could not reach the AI provider. Check your internet connection and provider settings. Details: $error');
+    } finally {
+      if (mounted) {
+        setState(() => _isGenerating = false);
+        _scrollToBottom();
       }
+    }
+  }
 
-      // If no events from stream, populate standard 5-agent team events
-      if (events.isEmpty) {
-        events.addAll([
-          TaskEventModel(
-            sequence: 1,
-            eventType: 'architect_analysis',
-            message: 'Architect analyzed architecture boundaries and container isolation invariants.',
-            payload: {'agent_role': 'architect'},
-            createdAt: DateTime.now(),
-          ),
-          TaskEventModel(
-            sequence: 2,
-            eventType: 'plan_synthesized',
-            message: 'Planner generated structured implementation milestones with verification checkpoints.',
-            payload: {'agent_role': 'planner'},
-            createdAt: DateTime.now(),
-          ),
-          TaskEventModel(
-            sequence: 3,
-            eventType: 'security_audited',
-            message: 'Security Reviewer validated OWASP compliance. Dropped capabilities (cap-drop=ALL).',
-            payload: {'agent_role': 'security_reviewer'},
-            createdAt: DateTime.now(),
-          ),
-          TaskEventModel(
-            sequence: 4,
-            eventType: 'coder_patch',
-            message: 'Coder synthesized code modification proposal with cryptographic precondition hashes.',
-            payload: {'agent_role': 'coder'},
-            createdAt: DateTime.now(),
-          ),
-          TaskEventModel(
-            sequence: 5,
-            eventType: 'qa_verified',
-            message: 'QA Engineer executed verification test suite: All tests passed cleanly.',
-            payload: {'agent_role': 'qa_engineer'},
-            createdAt: DateTime.now(),
-          ),
-        ]);
-      }
-
-      // 2. Synthesize contextual technical response and code based on prompt
-      String responseText = '';
-      String codeSnippet = '';
-      String codeLanguage = 'dart';
-      PatchProposalModel? patch;
-
-      final lower = text.toLowerCase();
-      if (lower.contains('fastapi') || lower.contains('jwt') || lower.contains('auth')) {
-        responseText = 'I have designed a production-grade FastAPI authentication router with JWT token validation and Argon2 password hashing. The implementation guarantees per-user isolation and strict token expiration.';
-        codeLanguage = 'python';
-        codeSnippet = '''from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-import jwt
-
-router = APIRouter(prefix="/auth", tags=["Authentication"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-@router.post("/login")
-def login(payload: dict):
-    # Verify credentials with Argon2 and issue JWT
-    token = jwt.encode({"sub": payload.get("email")}, "SECRET_KEY", algorithm="HS256")
-    return {"access_token": token, "token_type": "bearer"}
-''';
-        patch = PatchProposalModel(
-          patchId: 'patch-auth-101',
-          taskId: task?.id ?? 'task-demo-auth',
-          baseSnapshotDigest: 'snap-base-001',
-          patchDigest: 'a1b2c3d4e5f6',
-          unifiedDiff: '''--- a/backend/app/api/v1/endpoints/auth.py
-+++ b/backend/app/api/v1/endpoints/auth.py
-@@ -10,3 +10,12 @@
-+@router.post("/refresh")
-+def refresh_token(token: str = Depends(oauth2_scheme)):
-+    payload = decode_jwt(token)
-+    new_token = issue_token(payload["sub"])
-+    return {"access_token": new_token}''',
-          status: 'pending',
-          createdAt: DateTime.now(),
-        );
-      } else if (lower.contains('podman') || lower.contains('sandbox') || lower.contains('policy')) {
-        responseText = 'I have synthesized the hardened rootless Podman execution runtime policy. Untrusted execution runs strictly with UID 65532, dropped capabilities, and disabled networking.';
-        codeLanguage = 'python';
-        codeSnippet = '''class PodmanSandboxPolicy:
-    user = "65532:65532"
-    read_only_root = True
-    network_mode = "none"
-    cap_drop = ["ALL"]
-    security_opt = ["no-new-privileges:true", "seccomp=unconfined"]
-''';
-        patch = PatchProposalModel(
-          patchId: 'patch-sandbox-102',
-          taskId: task?.id ?? 'task-demo-sandbox',
-          baseSnapshotDigest: 'snap-base-002',
-          patchDigest: 'f87236d93e83',
-          unifiedDiff: '''--- a/runner/container_engine.py
-+++ b/runner/container_engine.py
-@@ -35,2 +35,6 @@
-+    def get_sandbox_flags(self) -> list[str]:
-+        return ["--user=65532", "--network=none", "--cap-drop=ALL"]''',
-          status: 'pending',
-          createdAt: DateTime.now(),
-        );
-      } else if (lower.contains('socket') || lower.contains('cleartext') || lower.contains('android')) {
-        responseText = 'I analyzed the Android cleartext traffic policy. In modern Android API 28+, cleartext HTTP traffic is blocked by default unless declared in the network security configuration.';
-        codeLanguage = 'xml';
-        codeSnippet = '''<!-- res/xml/network_security_config.xml -->
-<network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.0.2.2</domain>
-        <domain includeSubdomains="true">localhost</domain>
-    </domain-config>
-</network-security-config>
-''';
-        patch = PatchProposalModel(
-          patchId: 'patch-net-103',
-          taskId: task?.id ?? 'task-demo-net',
-          baseSnapshotDigest: 'snap-base-003',
-          patchDigest: '94bbdd182454',
-          unifiedDiff: '''--- a/client/android/app/src/main/AndroidManifest.xml
-+++ b/client/android/app/src/main/AndroidManifest.xml
-@@ -12,2 +12,3 @@
-+        android:networkSecurityConfig="@xml/network_security_config"
-         android:usesCleartextTraffic="true"''',
-          status: 'pending',
-          createdAt: DateTime.now(),
-        );
-      } else {
-        responseText = 'I have planned and synthesized an autonomous solution for: "$text". The multi-agent collaboration completed architectural review, security verification, and test generation.';
-        codeLanguage = 'dart';
-        codeSnippet = '''// DevForge AI Solution
-import 'package:flutter/material.dart';
-
-class DevForgeSolutionWidget extends StatelessWidget {
-  const DevForgeSolutionWidget({super.key});
+  void _replaceAssistantError(String messageId, String error) {
+    if (!mounted) return;
+    final idx = _messages.indexWhere((message) => message.id == messageId);
+    if (idx == -1) return;
+    setState(() {
+      _messages[idx] = _messages[idx].copyWith(
+        text: error,
+        isThinking: false,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

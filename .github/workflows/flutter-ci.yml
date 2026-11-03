@@ -25,8 +25,10 @@ jobs:
       - name: Run widget & unit tests
         run: flutter test
         working-directory: client
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Verify Android SDK tools
+        run: |
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" || test -x "$(dirname "$(dirname "$(command -v sdkmanager)")")/bin/sdkmanager"
+          sdkmanager --version
       - name: Install pinned Android NDK
         run: sdkmanager --install "ndk;27.0.12077973"
       - name: Build release APK

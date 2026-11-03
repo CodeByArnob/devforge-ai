@@ -100,7 +100,8 @@ class _NativeWorkspaceScreenState extends State<NativeWorkspaceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final runtimeInstalled = _runtime['linuxRuntimeInstalled'] == true;\n    final abis = _runtime['supportedAbis'] as List?;
+    final runtimeInstalled = _runtime['linuxRuntimeInstalled'] == true;
+    final abis = _runtime['supportedAbis'] as List?;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Device Workspace'),

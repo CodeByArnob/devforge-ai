@@ -36,9 +36,9 @@
 
 ## Phase 5 - Mobile engineering workspace (new)
 - [ ] Baseline Android/Flutter compatibility and release-signing audit
-- [ ] Responsive mobile IDE shell and project-scoped navigation
-- [ ] Typed Flutter-to-Kotlin runtime interface
-- [ ] Android app-private workspace and Storage Access Framework integration
+- [x] Add Device Workspace navigation destination and native workspace screen shell
+- [x] Typed Flutter MethodChannel contract for native workspace operations
+- [x] Android app-private workspace with bounded listing, UTF-8 read/write, directory/file creation, and canonical-path containment checks\n- [ ] Storage Access Framework integration
 - [ ] ARM64 Linux userspace evaluation and verified runtime bundle installer
 - [ ] Process supervisor, structured argv execution, output streaming and cancellation
 - [ ] Loopback-only web preview with WebView origin restrictions
@@ -48,3 +48,13 @@
 - [ ] Security regression suite and reproducible release verification
 
 Implementation contract: [Mobile Engineering Workspace Blueprint](mobile-engineering-workspace.md). PRoot is a userspace compatibility layer, not a hardened security boundary; untrusted remote builds remain on the dedicated rootless Podman runner.
+
+
+### Implemented first vertical slice (unverified by CI at authoring time)
+- Android native workspace bridge reports device ABI/API and explicitly reports Linux runtime as not installed unless an executable runtime entry point is present.
+- Workspace files are stored under the app-private files directory; no broad storage permission is requested.
+- File listing is bounded by depth and entry count; editor read/write is capped at 1 MiB.
+- Canonical path checks prevent traversal and symlink targets from escaping the private workspace.
+- Flutter Device tab supports nested folder navigation, folder/file creation, text-file editing, and save.
+- Flutter CI now compiles a debug APK so Kotlin/Android integration is checked on pull requests.
+- This slice does not implement PRoot, shell/terminal execution, runtime bundle installation, web preview, or remote build orchestration.

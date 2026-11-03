@@ -448,8 +448,8 @@ class _AIStudioScreenState extends State<AIStudioScreen> {
 
     _promptController.clear();
     final now = DateTime.now();
-    final userMessageId = 'user-' + now.microsecondsSinceEpoch.toString();
-    final assistantMessageId = 'assistant-' + now.microsecondsSinceEpoch.toString();
+    final userMessageId = 'user-${now.microsecondsSinceEpoch}';
+    final assistantMessageId = 'assistant-${now.microsecondsSinceEpoch}';
     final codingRequest = _isSoftwareEngineeringRequest(prompt);
 
     setState(() {

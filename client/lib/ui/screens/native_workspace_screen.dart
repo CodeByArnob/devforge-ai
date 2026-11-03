@@ -14,6 +14,7 @@ class _NativeWorkspaceScreenState extends State<NativeWorkspaceScreen> {
   Map<String, dynamic> _runtime = {};
   bool _loading = true;
   String? _error;
+  String _currentPath = '';
 
   @override
   void initState() {
@@ -28,7 +29,7 @@ class _NativeWorkspaceScreenState extends State<NativeWorkspaceScreen> {
     });
     try {
       final runtime = await _workspace.runtimeInfo();
-      final entries = await _workspace.listEntries();
+      final entries = await _workspace.listEntries(path: _currentPath);
       if (!mounted) return;
       setState(() {
         _runtime = runtime;
@@ -90,11 +91,41 @@ class _NativeWorkspaceScreenState extends State<NativeWorkspaceScreen> {
     controller.dispose();
     if (name == null || name.isEmpty || name.contains('/') || name == '.' || name == '..') return;
     try {
-      await _workspace.createDirectory(name);
+      await _workspace.createDirectory(_joinPath(_currentPath, name));
       await _refresh();
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unable to create folder: $error')));
+    }
+  }
+
+  String _joinPath(String parent, String child) => parent.isEmpty ? child : '$parent/$child';
+
+  Future<void> _createFile() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New file'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'File name'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Create')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || name.isEmpty || name.contains('/') || name == '.' || name == '..') return;
+    try {
+      await _workspace.writeFile(_joinPath(_currentPath, name), '');
+      await _refresh();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unable to create file: $error')));
     }
   }
 
@@ -105,7 +136,20 @@ class _NativeWorkspaceScreenState extends State<NativeWorkspaceScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Device Workspace'),
+        leading: _currentPath.isEmpty
+            ? null
+            : IconButton(
+                onPressed: () {
+                  final parts = _currentPath.split('/');
+                  parts.removeLast();
+                  setState(() => _currentPath = parts.join('/'));
+                  _refresh();
+                },
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Parent folder',
+              ),
         actions: [
+          IconButton(onPressed: _createFile, icon: const Icon(Icons.note_add_outlined), tooltip: 'New file'),
           IconButton(onPressed: _createFolder, icon: const Icon(Icons.create_new_folder_outlined), tooltip: 'New folder'),
           IconButton(onPressed: _refresh, icon: const Icon(Icons.refresh), tooltip: 'Refresh'),
         ],
@@ -174,6 +218,11 @@ class _NativeWorkspaceScreenState extends State<NativeWorkspaceScreen> {
                 padding: EdgeInsets.symmetric(vertical: 32),
                 child: Center(child: Text('Your private workspace is empty. Create a folder or add files to get started.')),
               ),
+            if (_currentPath.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text('Workspace / $_currentPath', style: Theme.of(context).textTheme.labelMedium),
+              ),
             ..._entries.map((entry) {
               final isDirectory = entry['type'] == 'directory';
               return ListTile(
@@ -185,7 +234,12 @@ class _NativeWorkspaceScreenState extends State<NativeWorkspaceScreen> {
                 trailing: isDirectory
                     ? null
                     : Text('${entry['size']} B', style: Theme.of(context).textTheme.labelSmall),
-                onTap: isDirectory ? null : () => _openFile(entry),
+                onTap: isDirectory
+                    ? () {
+                        setState(() => _currentPath = entry['path'] as String);
+                        _refresh();
+                      }
+                    : () => _openFile(entry),
               );
             }),
           ],

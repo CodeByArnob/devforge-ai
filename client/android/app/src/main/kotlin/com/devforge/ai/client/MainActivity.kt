@@ -76,7 +76,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun resolveWorkspacePath(relativePath: String): File {
-        if (relativePath.startsWith("/") || relativePath.contains('\\u0000')) {
+        if (relativePath.startsWith("/") || relativePath.contains(0.toChar())) {
             throw IllegalArgumentException("Absolute paths and invalid characters are not allowed.")
         }
         val root = workspaceRoot()
